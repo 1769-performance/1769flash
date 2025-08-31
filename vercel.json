@@ -1,0 +1,26 @@
+{
+  "buildCommand": "npm run build",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_API_BASE_URL": "https://dealer.1769.fi/v1"
+  },
+  "regions": ["fra1"],
+  "functions": {
+    "app/**": {
+      "maxDuration": 30
+    }
+  },
+  "redirects": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://dealer.1769.fi/v1/$1",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    }
+  ]
+}
