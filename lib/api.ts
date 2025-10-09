@@ -308,6 +308,7 @@ export interface Log {
   comment?: string
   url: string
   created: string
+  file_uuid?: string  // Added to support the new proxy endpoint
 }
 
 export interface Customer {

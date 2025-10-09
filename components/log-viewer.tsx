@@ -81,7 +81,14 @@ export function LogViewer({ fileUuid }: LogViewerProps) {
 
       // Fetch log content from URL if available
       if (data.url) {
-        const response = await fetch(data.url)
+        // Use Django API proxy instead of direct Google Drive URL to avoid CORS
+        const proxyUrl = data.file_uuid 
+          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${data.file_uuid}/logs/${data.uuid}/content`
+          : data.url // Fallback to direct URL if file_uuid is not available
+        
+        const response = await fetch(proxyUrl, {
+          credentials: 'include', // Include cookies for authentication
+        })
         const content = await response.text()
         setLogContent(content)
       } else {

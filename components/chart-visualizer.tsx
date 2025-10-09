@@ -185,8 +185,14 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
       setError(null)
       
       try {
-        // Simple fetch request - removed problematic headers
-        const response = await fetch(log.url)
+        // Use Django API proxy instead of direct Google Drive URL to avoid CORS
+        const proxyUrl = log.file_uuid 
+          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${log.file_uuid}/logs/${log.uuid}/content`
+          : log.url // Fallback to direct URL if file_uuid is not available
+        
+        const response = await fetch(proxyUrl, {
+          credentials: 'include', // Include cookies for authentication
+        })
         
         if (!response.ok) {
           throw new Error(`Failed to fetch log file: ${response.statusText}`)
