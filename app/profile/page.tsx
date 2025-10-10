@@ -86,14 +86,14 @@ export default function ProfilePage() {
             <CardDescription>Your basic account details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="min-w-0">
                 <Label>Username</Label>
-                <p className="text-sm text-muted-foreground">{user.user.username}</p>
+                <p className="text-sm text-muted-foreground break-words">{user.user.username}</p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <Label>Email</Label>
-                <p className="text-sm text-muted-foreground">{user.user.email}</p>
+                <p className="text-sm text-muted-foreground break-words">{user.user.email}</p>
               </div>
             </div>
             <div>

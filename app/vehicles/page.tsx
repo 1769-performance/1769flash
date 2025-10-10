@@ -4,8 +4,6 @@ import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -13,10 +11,11 @@ import { DataTable } from "@/components/data-table"
 import { AddVehicleDialog } from "@/components/add-vehicle-dialog"
 import { ProjectsTable } from "@/components/projects-table"
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select"
+import { ListFilters } from "@/components/list-filters"
 import { usePaginatedList } from "@/hooks/use-paginated-list"
 import { useAuth } from "@/hooks/use-auth"
 import type { Vehicle } from "@/lib/api"
-import { Filter, ChevronDown, ChevronRight, Car } from "lucide-react"
+import { ChevronDown, ChevronRight, Car } from "lucide-react"
 
 const statusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
@@ -219,71 +218,45 @@ export default function VehiclesPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-          <CardDescription>Search and filter vehicles by various criteria</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="md:col-span-1 space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="search"
-                  placeholder="Search vehicles..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch()
-                    }
-                  }}
-                  className="flex-1"
+      <div className="mb-6">
+        <ListFilters
+          searchValue={searchQuery}
+          searchPlaceholder="Search vehicles..."
+          onSearchChange={setSearchQuery}
+          filterFields={[
+            {
+              id: "paidOptions",
+              label: "Paid Options",
+              content: (
+                <MultiSelect
+                  options={paidOptionsOptions}
+                  selected={paidOptionsFilter}
+                  onChange={setPaidOptionsFilter}
+                  placeholder="Filter by paid options..."
+                  className="w-full h-9"
                 />
-              </div>
-            </div>
-
-            {/* Paid Options Filter */}
-            <div className="space-y-2">
-              <Label>Paid Options</Label>
-              <MultiSelect
-                options={paidOptionsOptions}
-                selected={paidOptionsFilter}
-                onChange={setPaidOptionsFilter}
-                placeholder="Filter by paid options..."
-                className="w-full"
-              />
-            </div>
-
-            {/* Sort By */}
-            <div className="space-y-2">
-              <Label htmlFor="sort">Sort By</Label>
-              <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={clearFilters} disabled={!hasActiveFilters}>
-                Reset Filters
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              ),
+            },
+          ]}
+          sortField={
+            <Select value={sortBy} onValueChange={handleSortChange}>
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+          onReset={clearFilters}
+          hasActiveFilters={hasActiveFilters}
+          activeFilterCount={[searchQuery.trim() !== "", paidOptionsFilter.length > 0].filter(Boolean).length}
+        />
+      </div>
 
       {error && (
         <Card className="mb-6">

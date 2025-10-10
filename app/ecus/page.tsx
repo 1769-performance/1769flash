@@ -5,15 +5,14 @@ import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select"
+import { ListFilters } from "@/components/list-filters"
 import { usePaginatedList } from "@/hooks/use-paginated-list"
 import { useAuth } from "@/hooks/use-auth"
 import type { ECU } from "@/lib/api"
-import { Filter, ChevronDown, ChevronRight, Cpu, ExternalLink } from "lucide-react"
+import { ChevronDown, ChevronRight, Cpu, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { 
   formatManufacturingDate, 
@@ -124,97 +123,80 @@ export default function ECUsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-          <CardDescription>Search and filter ECUs by various criteria</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {/* Search */}
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search VIN, serial, name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            
-            {/* Has Assigned Vehicle */}
-            <div className="space-y-2">
-              <Label htmlFor="hasVehicle">Vehicle Assignment</Label>
-              <Select value={hasAssignedVehicle} onValueChange={setHasAssignedVehicle}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All ECUs</SelectItem>
-                  <SelectItem value="true">Assigned to Vehicle</SelectItem>
-                  <SelectItem value="false">Unassigned</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* ECU Type */}
-            <div className="space-y-2">
-              <Label htmlFor="ecuType">ECU Type</Label>
-              <Select value={ecuTypeFilter} onValueChange={setEcuTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="original">Original</SelectItem>
-                  <SelectItem value="1769">1769</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* SVT Type */}
-            <div className="space-y-2">
-              <Label>SVT Types</Label>
-              <MultiSelect
-                options={svtTypeOptions}
-                selected={svtTypeFilter}
-                onChange={setSvtTypeFilter}
-                placeholder="Filter by SVT types..."
-                className="w-full"
-              />
-            </div>
-            
-            {/* Ordering */}
-            <div className="space-y-2">
-              <Label htmlFor="ordering">Sort By</Label>
-              <Select value={ordering} onValueChange={setOrdering}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="-created">Newest first</SelectItem>
-                  <SelectItem value="created">Oldest first</SelectItem>
-                  <SelectItem value="-modified">Recently modified</SelectItem>
-                  <SelectItem value="modified">Least recently modified</SelectItem>
-                  <SelectItem value="name">Name A-Z</SelectItem>
-                  <SelectItem value="-name">Name Z-A</SelectItem>
-                  <SelectItem value="serial">Serial A-Z</SelectItem>
-                  <SelectItem value="-serial">Serial Z-A</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="flex justify-end mt-4">
-            <Button variant="outline" onClick={handleResetFilters} disabled={!hasActiveFilters}>
-              Reset Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <ListFilters
+          searchValue={search}
+          searchPlaceholder="Search VIN, serial, name..."
+          onSearchChange={setSearch}
+          filterFields={[
+            {
+              id: "vehicleAssignment",
+              label: "Vehicle Assignment",
+              content: (
+                <Select value={hasAssignedVehicle} onValueChange={setHasAssignedVehicle}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All ECUs</SelectItem>
+                    <SelectItem value="true">Assigned to Vehicle</SelectItem>
+                    <SelectItem value="false">Unassigned</SelectItem>
+                  </SelectContent>
+                </Select>
+              ),
+            },
+            {
+              id: "ecuType",
+              label: "ECU Type",
+              content: (
+                <Select value={ecuTypeFilter} onValueChange={setEcuTypeFilter}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="original">Original</SelectItem>
+                    <SelectItem value="1769">1769</SelectItem>
+                  </SelectContent>
+                </Select>
+              ),
+            },
+            {
+              id: "svtTypes",
+              label: "SVT Types",
+              content: (
+                <MultiSelect
+                  options={svtTypeOptions}
+                  selected={svtTypeFilter}
+                  onChange={setSvtTypeFilter}
+                  placeholder="Filter by SVT types..."
+                  className="w-full h-9"
+                />
+              ),
+            },
+          ]}
+          sortField={
+            <Select value={ordering} onValueChange={setOrdering}>
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-created">Newest first</SelectItem>
+                <SelectItem value="created">Oldest first</SelectItem>
+                <SelectItem value="-modified">Recently modified</SelectItem>
+                <SelectItem value="modified">Least recently modified</SelectItem>
+                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="-name">Name Z-A</SelectItem>
+                <SelectItem value="serial">Serial A-Z</SelectItem>
+                <SelectItem value="-serial">Serial Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+          onReset={handleResetFilters}
+          hasActiveFilters={hasActiveFilters}
+          activeFilterCount={[search.trim() !== "", hasAssignedVehicle !== "all", ecuTypeFilter !== "all", svtTypeFilter.length > 0].filter(Boolean).length}
+        />
+      </div>
 
       {error && (
         <Card className="mb-6">

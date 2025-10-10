@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DataTable } from "@/components/data-table"
 import { NewProjectDialog } from "@/components/new-project-dialog"
+import { ListFilters } from "@/components/list-filters"
 import { usePaginatedList } from "@/hooks/use-paginated-list"
 import { useAuth } from "@/hooks/use-auth"
 import type { Project } from "@/lib/api"
@@ -135,64 +134,50 @@ export default function ProjectsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filters & Search</CardTitle>
-          <CardDescription>Filter and search your projects</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search title, VIN, names..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="ongoing">Ongoing</SelectItem>
-                  <SelectItem value="finished">Finished</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="ordering">Sort by</Label>
-              <Select value={ordering} onValueChange={setOrdering}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="-created">Newest first</SelectItem>
-                  <SelectItem value="created">Oldest first</SelectItem>
-                  <SelectItem value="-modified">Recently modified</SelectItem>
-                  <SelectItem value="modified">Least recently modified</SelectItem>
-                  <SelectItem value="title">Title A-Z</SelectItem>
-                  <SelectItem value="-title">Title Z-A</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={handleResetFilters}>
-                Reset Filters
-              </Button>
-            </div>
-          </div>
-          
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <ListFilters
+          searchValue={search}
+          searchPlaceholder="Search title, VIN, names..."
+          onSearchChange={setSearch}
+          filterFields={[
+            {
+              id: "status",
+              label: "Status",
+              content: (
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="ongoing">Ongoing</SelectItem>
+                    <SelectItem value="finished">Finished</SelectItem>
+                  </SelectContent>
+                </Select>
+              ),
+            },
+          ]}
+          sortField={
+            <Select value={ordering} onValueChange={setOrdering}>
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-created">Newest first</SelectItem>
+                <SelectItem value="created">Oldest first</SelectItem>
+                <SelectItem value="-modified">Recently modified</SelectItem>
+                <SelectItem value="modified">Least recently modified</SelectItem>
+                <SelectItem value="title">Title A-Z</SelectItem>
+                <SelectItem value="-title">Title Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+          onReset={handleResetFilters}
+          hasActiveFilters={statusFilter !== "all" || search !== "" || ordering !== "-created"}
+          activeFilterCount={[statusFilter !== "all", search !== ""].filter(Boolean).length}
+        />
+      </div>
 
       {error && (
         <Card className="mb-6">

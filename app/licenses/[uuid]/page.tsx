@@ -74,7 +74,7 @@ export default function LicenseDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3" />
           <div className="h-4 bg-muted rounded w-1/2" />
@@ -86,7 +86,7 @@ export default function LicenseDetailPage() {
 
   if (error || !license) {
     return (
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">Error: {error || "License not found"}</p>
@@ -100,7 +100,7 @@ export default function LicenseDetailPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="flex items-center gap-4 mb-6 ml-6">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/licenses">

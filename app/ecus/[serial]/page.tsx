@@ -98,7 +98,7 @@ export default function EcuDetailPage() {
   const ecuTypeInfo = getEcuTypeInfo(ecu.type)
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="flex items-center gap-4 mb-6 ml-6">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/ecus">
@@ -116,7 +116,7 @@ export default function EcuDetailPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Cpu className="h-6 w-6" />
-                  ECU {ecu.serial}
+                  ECU
                 </CardTitle>
                 <CardDescription>ECU details and file management</CardDescription>
               </div>
@@ -129,7 +129,7 @@ export default function EcuDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Serial Number</p>
-                <p className="text-sm font-mono bg-muted px-2 py-1 rounded mt-1">{ecu.serial}</p>
+                <p className="text-sm font-mono mt-1">{ecu.serial}</p>
               </div>
               
               <div>

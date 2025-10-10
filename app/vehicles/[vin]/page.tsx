@@ -77,7 +77,7 @@ export default function VehicleDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3" />
           <div className="h-4 bg-muted rounded w-1/2" />
@@ -89,7 +89,7 @@ export default function VehicleDetailPage() {
 
   if (error || !vehicle) {
     return (
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">Error: {error || "Vehicle not found"}</p>
@@ -104,7 +104,7 @@ export default function VehicleDetailPage() {
 
   return (
     <div className="p-4 md:p-6">
-      <div className="flex items-center gap-4 mb-4 md:mb-6">
+      <div className="flex items-center gap-4 mb-4 md:mb-6 ml-6">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/vehicles">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -122,7 +122,7 @@ export default function VehicleDetailPage() {
               <div className="min-w-0 flex-1">
                 <CardTitle className="flex items-center gap-2 flex-wrap">
                   <Car className="h-6 w-6 shrink-0" />
-                  <span className="break-all">Vehicle {vehicle.vin}</span>
+                  <span className="break-all">Vehicle</span>
                 </CardTitle>
                 <CardDescription>Vehicle details and management</CardDescription>
               </div>

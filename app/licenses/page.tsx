@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { ListFilters } from "@/components/list-filters"
 import { usePaginatedList } from "@/hooks/use-paginated-list"
 import { useAuth } from "@/hooks/use-auth"
 import type { License } from "@/lib/api"
-import { FileText, Filter, ChevronDown, ChevronRight, Eye, EyeOff, AlertTriangle } from "lucide-react"
+import { FileText, ChevronDown, ChevronRight, Eye, EyeOff, AlertTriangle } from "lucide-react"
 
 const statusColors: Record<string, string> = {
   issued: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -132,69 +131,53 @@ export default function LicensesPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-          <CardDescription>Search and filter your software licenses</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search by VIN..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="issued">Issued</SelectItem>
-                  <SelectItem value="pending_generation">Pending Generation</SelectItem>
-                  <SelectItem value="awaiting_hardware">Awaiting Hardware</SelectItem>
-                  <SelectItem value="required_update">Update Required</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="ordering">Sort by</Label>
-              <Select value={ordering} onValueChange={setOrdering}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="-created">Newest first</SelectItem>
-                  <SelectItem value="created">Oldest first</SelectItem>
-                  <SelectItem value="-modified">Recently modified</SelectItem>
-                  <SelectItem value="modified">Least recently modified</SelectItem>
-                  <SelectItem value="status">Status A-Z</SelectItem>
-                  <SelectItem value="-status">Status Z-A</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex justify-end mt-4">
-              <Button onClick={handleResetFilters} variant="outline">
-                Reset Filters
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <ListFilters
+          searchValue={search}
+          searchPlaceholder="Search by VIN..."
+          onSearchChange={setSearch}
+          filterFields={[
+            {
+              id: "status",
+              label: "Status",
+              content: (
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="issued">Issued</SelectItem>
+                    <SelectItem value="pending_generation">Pending Generation</SelectItem>
+                    <SelectItem value="awaiting_hardware">Awaiting Hardware</SelectItem>
+                    <SelectItem value="required_update">Update Required</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                  </SelectContent>
+                </Select>
+              ),
+            },
+          ]}
+          sortField={
+            <Select value={ordering} onValueChange={setOrdering}>
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-created">Newest first</SelectItem>
+                <SelectItem value="created">Oldest first</SelectItem>
+                <SelectItem value="-modified">Recently modified</SelectItem>
+                <SelectItem value="modified">Least recently modified</SelectItem>
+                <SelectItem value="status">Status A-Z</SelectItem>
+                <SelectItem value="-status">Status Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+          onReset={handleResetFilters}
+          hasActiveFilters={statusFilter !== "all" || search !== "" || ordering !== "-created"}
+          activeFilterCount={[statusFilter !== "all", search !== ""].filter(Boolean).length}
+        />
+      </div>
 
       {error && (
         <Card className="mb-6">

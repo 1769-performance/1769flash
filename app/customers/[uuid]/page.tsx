@@ -234,8 +234,8 @@ export default function CustomerDetailPage({ params }: CustomerDetailPageProps) 
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
+      <div className="p-4 md:p-6">
+        <div className="mb-6 ml-6">
           <Button variant="ghost" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Customers
@@ -249,7 +249,7 @@ export default function CustomerDetailPage({ params }: CustomerDetailPageProps) 
 
   if (error || !customer) {
     return (
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -267,7 +267,7 @@ export default function CustomerDetailPage({ params }: CustomerDetailPageProps) 
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       {/* Header */}
       <div className="mb-6">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">

@@ -5,15 +5,14 @@ import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { LoadingState } from "@/components/ui/loading-state"
+import { ListFilters } from "@/components/list-filters"
 import { usePaginatedList } from "@/hooks/use-paginated-list"
 import type { Customer, LicenseFeature } from "@/lib/api"
-import { Users, Filter, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react"
+import { Users, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 export default function CustomersPage() {
@@ -99,7 +98,7 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-6 ml-6">
         <div>
           <h1 className="text-3xl font-bold">Customers</h1>
@@ -108,27 +107,16 @@ export default function CustomersPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Search & Filters
-          </CardTitle>
-          <CardDescription>Search and filter your customers</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Input
-                id="search"
-                placeholder="Search by username, email, or name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <ListFilters
+          searchValue={search}
+          searchPlaceholder="Search by username, email, or name..."
+          onSearchChange={setSearch}
+          onReset={handleResetFilters}
+          hasActiveFilters={search.trim() !== ""}
+          activeFilterCount={search.trim() !== "" ? 1 : 0}
+        />
+      </div>
 
       {error && (
         <ErrorAlert 
