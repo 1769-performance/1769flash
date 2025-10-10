@@ -14,15 +14,16 @@ interface ProtectedLayoutProps {
 }
 
 function LayoutWithFloatingTrigger({ children }: { children: React.ReactNode }) {
-  const { open } = useSidebar()
-  
+  const { open, isMobile } = useSidebar()
+
   return (
     <>
       <AppSidebar />
       <SidebarInset>
-        {!open && (
-          <div className="fixed top-4 left-1 z-50">
-            <SidebarTrigger className="h-10 w-10" />
+        {/* On mobile, always show trigger. On desktop, show when sidebar is collapsed */}
+        {(isMobile || !open) && (
+          <div className="fixed top-4 left-2 z-50 md:left-1">
+            <SidebarTrigger className="h-10 w-10 shadow-lg md:shadow-none" />
           </div>
         )}
         <main className="flex-1 overflow-auto">{children}</main>

@@ -88,7 +88,7 @@ export default function CustomersPage() {
 
   if (loading && customers.length === 0) {
     return (
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="mb-6 ml-6">
           <h1 className="text-3xl font-bold">Customers</h1>
           <p className="text-muted-foreground">Manage your customer relationships</p>

@@ -127,7 +127,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
+      <Card className="p-4 md:p-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />

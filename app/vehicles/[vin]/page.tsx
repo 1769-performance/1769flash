@@ -103,12 +103,13 @@ export default function VehicleDetailPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6 ml-6">
+    <div className="p-4 md:p-6">
+      <div className="flex items-center gap-4 mb-4 md:mb-6">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/vehicles">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Vehicles
+            <span className="hidden sm:inline">Back to Vehicles</span>
+            <span className="sm:hidden">Back</span>
           </Link>
         </Button>
       </div>
@@ -117,19 +118,21 @@ export default function VehicleDetailPage() {
         {/* Vehicle Header */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Car className="h-6 w-6" />
-                  Vehicle {vehicle.vin}
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="flex items-center gap-2 flex-wrap">
+                  <Car className="h-6 w-6 shrink-0" />
+                  <span className="break-all">Vehicle {vehicle.vin}</span>
                 </CardTitle>
                 <CardDescription>Vehicle details and management</CardDescription>
               </div>
-              <CreateProjectDialog vehicleVin={vehicle.vin} onProjectCreated={refetchVehicle} />
+              <div className="shrink-0">
+                <CreateProjectDialog vehicleVin={vehicle.vin} onProjectCreated={refetchVehicle} />
+              </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <CardContent className="p-4 md:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <p className="text-sm font-medium">VIN</p>
                 <p className="text-sm text-muted-foreground font-mono">{vehicle.vin}</p>

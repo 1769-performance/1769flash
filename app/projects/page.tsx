@@ -123,7 +123,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-6 ml-6">
         <div>
           <h1 className="text-3xl font-bold">Projects</h1>

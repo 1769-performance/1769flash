@@ -222,10 +222,10 @@ export function EcuPanel({
                       e.stopPropagation()
                       toggleEcuExpansion(ecu.serial)
                     }}
-                    className="ml-2"
+                    className="ml-2 shrink-0"
                   >
                     {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    SVT/SVK
+                    <span className="hidden sm:inline">SVT/SVK</span>
                   </Button>
                 </div>
               </div>
@@ -269,12 +269,12 @@ export function EcuPanel({
               {/* Files & Logs Panel - Shown when ECU is selected */}
               {isSelected && (
                 <div className="border-t pt-3 mt-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Files & Logs
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <h4 className="text-sm font-medium flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Files & Logs</span>
                       {loadingFiles.has(ecu.serial) && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
                       )}
                     </h4>
                     {isDealer && onFileUploaded && (
@@ -306,40 +306,43 @@ export function EcuPanel({
                           
                           return (
                             <div key={file.uuid} className="border border-muted rounded-md p-3">
-                              <div className="flex items-center justify-between">
-                                <div className="space-y-1 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium text-sm">{file.name}</span>
-                                    <span className="text-xs text-muted-foreground">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-1 flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="font-medium text-sm break-all min-w-0">{file.name}</span>
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                                       {new Date(file.created).toLocaleDateString()}
                                     </span>
                                   </div>
                                   {file.comment && (
-                                    <p className="text-xs text-muted-foreground ml-6">{file.comment}</p>
+                                    <p className="text-xs text-muted-foreground ml-6 break-words">{file.comment}</p>
                                   )}
                                 </div>
-                                
-                                <div className="flex items-center gap-2">
+
+                                <div className="flex items-center gap-1 shrink-0">
                                   {isDealer && (
                                     <Button
                                       size="sm"
                                       variant="ghost"
                                       onClick={() => handleDownload(file.url, file.name)}
                                       title="Download file"
+                                      className="shrink-0"
                                     >
                                       <Download className="h-4 w-4" />
                                     </Button>
                                   )}
-                                  
+
                                   {file.logs && file.logs.length > 0 && (
                                     <Button
                                       size="sm"
                                       variant="ghost"
                                       onClick={() => toggleFileExpansion(file.uuid)}
+                                      className="shrink-0"
                                     >
                                       {isFileExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                                      Logs ({file.logs.length})
+                                      <span className="hidden sm:inline">Logs ({file.logs.length})</span>
+                                      <span className="sm:hidden">({file.logs.length})</span>
                                     </Button>
                                   )}
                                 </div>
@@ -350,42 +353,44 @@ export function EcuPanel({
                                 <Collapsible open={isFileExpanded}>
                                   <CollapsibleContent className="mt-3 pt-3 border-t border-muted space-y-2">
                                     {file.logs.map((log) => (
-                                      <div key={log.uuid} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
-                                        <div className="space-y-1">
-                                          <div className="flex items-center gap-2">
-                                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-sm font-medium">{log.name}</span>
-                                            <span className="text-xs text-muted-foreground">
+                                      <div key={log.uuid} className="flex items-start justify-between gap-2 p-2 bg-muted/50 rounded-md">
+                                        <div className="space-y-1 flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <BarChart3 className="h-4 w-4 text-muted-foreground shrink-0" />
+                                            <span className="text-sm font-medium break-all min-w-0">{log.name}</span>
+                                            <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                                               {new Date(log.created).toLocaleDateString()}
                                             </span>
                                           </div>
                                           {log.comment && (
-                                            <p className="text-xs text-muted-foreground ml-6">{log.comment}</p>
+                                            <p className="text-xs text-muted-foreground ml-6 break-words">{log.comment}</p>
                                           )}
                                         </div>
-                                        
-                                        <div className="flex items-center gap-2">
+
+                                        <div className="flex items-center gap-1 shrink-0">
                                           <Button
                                             size="sm"
                                             variant="ghost"
                                             onClick={() => handleDownload(log.url, log.name)}
                                             title="Download log file"
+                                            className="shrink-0"
                                           >
                                             <Download className="h-4 w-4" />
                                           </Button>
-                                          
+
                                           {onLogVisualize && (
                                             <Button
                                               size="sm"
                                               variant="outline"
                                               onClick={() => onLogVisualize(log)}
                                               title="Visualize log data"
+                                              className="shrink-0"
                                             >
-                                              <BarChart3 className="h-4 w-4 mr-2" />
-                                              Visualize
+                                              <BarChart3 className="h-4 w-4 sm:mr-2" />
+                                              <span className="hidden sm:inline">Visualize</span>
                                             </Button>
                                           )}
-                                          
+
                                         </div>
                                       </div>
                                     ))}

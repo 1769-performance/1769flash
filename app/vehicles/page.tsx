@@ -120,7 +120,7 @@ export default function VehiclesPage() {
       key: "vin" as keyof Vehicle,
       header: "VIN",
       render: (vin: string) => (
-        <span className="font-mono text-sm break-all">
+        <span className="font-mono text-sm whitespace-nowrap">
           {vin}
         </span>
       ),
@@ -207,13 +207,15 @@ export default function VehiclesPage() {
   const hasActiveFilters = searchQuery.trim() !== "" || paidOptionsFilter.length > 0 || sortBy !== "-created"
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6 ml-6">
-        <div>
-          <h1 className="text-3xl font-bold">Vehicles</h1>
-          <p className="text-muted-foreground">Manage your vehicle inventory</p>
+    <div className="p-4 md:p-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6 gap-4 flex-wrap ml-6">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold">Vehicles</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Manage your vehicle inventory</p>
         </div>
-        <AddVehicleDialog onVehicleAdded={refetch} />
+        <div className="shrink-0">
+          <AddVehicleDialog onVehicleAdded={refetch} />
+        </div>
       </div>
 
       {/* Filters */}

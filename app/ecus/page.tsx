@@ -115,11 +115,11 @@ export default function ECUsPage() {
                           ecuTypeFilter !== "all" || svtTypeFilter.length > 0 || ordering !== "-created"
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6 ml-6">
+    <div className="p-4 md:p-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6 ml-6">
         <div>
-          <h1 className="text-3xl font-bold">ECUs</h1>
-          <p className="text-muted-foreground">Manage ECU inventory and data</p>
+          <h1 className="text-2xl md:text-3xl font-bold">ECUs</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Manage ECU inventory and data</p>
         </div>
       </div>
 
@@ -256,18 +256,18 @@ export default function ECUsPage() {
                 
                 return (
                   <div key={ecu.serial} className="border rounded-lg overflow-hidden">
-                    <div 
+                    <div
                       className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                       onClick={() => handleRowClick(ecu)}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 flex-1">
-                          <div className="min-w-0">
+                      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 flex-1 w-full lg:w-auto">
+                          <div className="min-w-0 col-span-2 sm:col-span-1">
                             <p className="text-sm font-medium">VIN</p>
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-mono text-muted-foreground break-all">{ecu.vehicle}</p>
+                              <p className="text-sm font-mono text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{ecu.vehicle}</p>
                               {ecu.vehicle && (
-                                <Button variant="ghost" size="sm" asChild>
+                                <Button variant="ghost" size="sm" asChild className="shrink-0">
                                   <Link href={`/vehicles/${ecu.vehicle}`}>
                                     <ExternalLink className="h-3 w-3" />
                                   </Link>
@@ -275,7 +275,12 @@ export default function ECUsPage() {
                               )}
                             </div>
                           </div>
-                          
+
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">Serial</p>
+                            <p className="text-sm font-mono text-muted-foreground truncate">{ecu.serial}</p>
+                          </div>
+
                           {/* Role-based dealer/customer column */}
                           {user?.profile_type === "customer" ? (
                             <div className="min-w-0">
@@ -288,42 +293,36 @@ export default function ECUsPage() {
                               <p className="text-sm text-muted-foreground truncate">{ecu.customer}</p>
                             </div>
                           )}
-                          
-                          <div>
+
+                          <div className="min-w-0">
                             <p className="text-sm font-medium">Name</p>
-                            <p className="text-sm text-muted-foreground">{ecu.name}</p>
+                            <p className="text-sm text-muted-foreground truncate">{ecu.name}</p>
                           </div>
-                          
+
                           <div>
                             <p className="text-sm font-medium">Type</p>
                             <Badge variant="secondary" className={`${ecuTypeInfo.color} text-xs`}>
                               {ecuTypeInfo.label}
                             </Badge>
                           </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium">Serial</p>
-                            <p className="text-sm font-mono text-muted-foreground">{ecu.serial}</p>
-                          </div>
-                          
-                          <div>
+
+                          <div className="hidden md:block">
                             <p className="text-sm font-medium">Address</p>
                             <p className="text-sm font-mono text-muted-foreground">{formatAddress(ecu.address)}</p>
                           </div>
 
-                          <div>
+                          <div className="hidden lg:block">
                             <p className="text-sm font-medium">Mfg</p>
                             <p className="text-sm font-mono text-muted-foreground">{formatManufacturingDate(ecu.man_date)}</p>
                           </div>
 
-                          <div>
+                          <div className="hidden xl:block">
                             <p className="text-sm font-medium">BMW Name</p>
-                            <p className="text-sm font-mono text-muted-foreground">{ecu.name_BMW}</p>
+                            <p className="text-sm font-mono text-muted-foreground truncate">{ecu.name_BMW}</p>
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-4 ml-4">
-                          
+
+                        <div className="flex items-center gap-2 shrink-0">
                           {ecu.svts && ecu.svts.length > 0 && (
                             <Button
                               variant="ghost"
@@ -332,10 +331,14 @@ export default function ECUsPage() {
                                 e.stopPropagation()
                                 toggleEcuExpansion(ecu.serial)
                               }}
+                              className="shrink-0"
                             >
                               {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                              <span className="ml-1">
+                              <span className="ml-1 hidden sm:inline">
                                 SVT/SVK ({Object.values(svtCounts).reduce((a, b) => a + b, 0)})
+                              </span>
+                              <span className="ml-1 sm:hidden">
+                                ({Object.values(svtCounts).reduce((a, b) => a + b, 0)})
                               </span>
                             </Button>
                           )}
