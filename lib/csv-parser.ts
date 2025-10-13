@@ -29,77 +29,50 @@ export interface ParsedCsvData {
 }
 
 /**
- * Predefined automotive parameter configurations
+ * Color palette for chart lines - highly contrasting colors for better differentiation
+ * Colors are selected to be maximally distinct from each other
  */
-const AUTOMOTIVE_PARAMETERS: Record<string, Partial<ChartColumn>> = {
-  'Engine RPM': {
-    unit: 'rpm',
-    color: '#ff6b35',
-    yAxis: 'left'
-  },
-  'Accelerator Pedal': {
-    unit: '%',
-    color: '#4ecdc4',
-    yAxis: 'right'
-  },
-  'Ignition Angle Actual': {
-    unit: '°',
-    color: '#45b7d1',
-    yAxis: 'right'
-  },
-  'Ignition Angle Target': {
-    unit: '°',
-    color: '#96ceb4',
-    yAxis: 'right'
-  },
-  'Load Actual': {
-    unit: '%',
-    color: '#feca57',
-    yAxis: 'left'
-  },
-  'Load Target': {
-    unit: '%',
-    color: '#ff9ff3',
-    yAxis: 'left'
-  },
-  'Lambda Actual Bank1': {
-    unit: 'λ',
-    color: '#54a0ff',
-    yAxis: 'right'
-  },
-  'Lambda Actual Bank2': {
-    unit: 'λ',
-    color: '#5f27cd',
-    yAxis: 'right'
-  },
-  'Lambda Target Bank1': {
-    unit: 'λ',
-    color: '#00d2d3',
-    yAxis: 'right'
-  },
-  'Lambda Target Bank2': {
-    unit: 'λ',
-    color: '#ff9057',
-    yAxis: 'right'
-  },
-  'Fuel Ethanol Content (RAM)': {
-    unit: '%',
-    color: '#6c5ce7',
-    yAxis: 'right'
-  },
-  'ausgegebene Einspritzzeit': {
-    unit: 'ms',
-    color: '#a29bfe',
-    yAxis: 'left'
-  }
-}
-
-/**
- * Default colors for parameters not in the predefined list
- */
-const DEFAULT_COLORS = [
-  '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1',
-  '#d084d0', '#ffb347', '#87d068', '#ffa39e', '#b5b5b5'
+const CHART_COLORS = [
+  '#FF0000', // Bright Red
+  '#0000FF', // Bright Blue
+  '#00FF00', // Bright Green
+  '#FF00FF', // Magenta
+  '#FFFF00', // Yellow
+  '#00FFFF', // Cyan
+  '#FF8000', // Orange
+  '#8000FF', // Purple
+  '#00FF80', // Spring Green
+  '#FF0080', // Rose
+  '#0080FF', // Azure
+  '#80FF00', // Chartreuse
+  '#FF6B35', // Coral
+  '#4ECDC4', // Turquoise
+  '#FFD700', // Gold
+  '#FF1493', // Deep Pink
+  '#00CED1', // Dark Turquoise
+  '#FF4500', // Orange Red
+  '#9370DB', // Medium Purple
+  '#32CD32', // Lime Green
+  '#FF69B4', // Hot Pink
+  '#1E90FF', // Dodger Blue
+  '#FFB6C1', // Light Pink
+  '#20B2AA', // Light Sea Green
+  '#FF6347', // Tomato
+  '#4169E1', // Royal Blue
+  '#98FB98', // Pale Green
+  '#DDA0DD', // Plum
+  '#F0E68C', // Khaki
+  '#87CEEB', // Sky Blue
+  '#FA8072', // Salmon
+  '#9932CC', // Dark Orchid
+  '#7FFF00', // Chartreuse
+  '#DC143C', // Crimson
+  '#00BFFF', // Deep Sky Blue
+  '#ADFF2F', // Green Yellow
+  '#FF00FF', // Fuchsia
+  '#00FA9A', // Medium Spring Green
+  '#FF1493', // Deep Pink
+  '#00CED1'  // Dark Turquoise
 ]
 
 /**
@@ -130,19 +103,29 @@ export async function parseCsvData(csvContent: string): Promise<ParsedCsvData> {
       console.warn('First column is not recognized as time data:', headers[0])
     }
 
-    // Create column definitions
+    // Create column definitions - simple, no predefined configs
+    // Track used keys to ensure uniqueness
+    const usedKeys = new Set<string>()
+
     const columns: ChartColumn[] = headers.map((header, index) => {
-      const key = header.toLowerCase().replace(/[^a-z0-9]/g, '_')
-      const predefined = AUTOMOTIVE_PARAMETERS[header]
-      
+      let key = header.toLowerCase().replace(/[^a-z0-9]/g, '_')
+
+      // Ensure unique keys by appending index if duplicate
+      let uniqueKey = key
+      let counter = 1
+      while (usedKeys.has(uniqueKey)) {
+        uniqueKey = `${key}_${counter}`
+        counter++
+      }
+      usedKeys.add(uniqueKey)
+
       return {
-        key,
+        key: uniqueKey,
         name: header,
-        unit: predefined?.unit || '',
-        color: predefined?.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
-        yAxis: predefined?.yAxis || (index === 0 ? 'left' : 'right'),
-        visible: true,
-        ...predefined
+        unit: '',
+        color: CHART_COLORS[index % CHART_COLORS.length],
+        yAxis: index === 0 ? 'left' : 'right', // First column (time) on left, rest on right by default
+        visible: false // Start with all columns hidden, user will enable them
       }
     })
 
@@ -256,64 +239,3 @@ export function downsampleData(
   return downsampled
 }
 
-/**
- * Get statistics for a specific column
- */
-export function getColumnStats(data: ChartDataPoint[], columnKey: string) {
-  const values = data
-    .map(point => point[columnKey])
-    .filter(value => typeof value === 'number' && !isNaN(value)) as number[]
-
-  if (values.length === 0) {
-    return null
-  }
-
-  const sorted = [...values].sort((a, b) => a - b)
-  const min = sorted[0]
-  const max = sorted[sorted.length - 1]
-  const mean = values.reduce((sum, val) => sum + val, 0) / values.length
-  const median = sorted[Math.floor(sorted.length / 2)]
-
-  return {
-    min,
-    max,
-    mean,
-    median,
-    count: values.length
-  }
-}
-
-/**
- * Detect automotive parameter patterns and suggest optimal Y-axis groupings
- */
-export function suggestYAxisGroupings(columns: ChartColumn[]): Record<string, ChartColumn[]> {
-  const groups: Record<string, ChartColumn[]> = {
-    'RPM & Load': [],
-    'Angles & Timing': [],
-    'Lambda & Fuel': [],
-    'Other': []
-  }
-
-  columns.forEach(column => {
-    const name = column.name.toLowerCase()
-    
-    if (name.includes('rpm') || name.includes('load')) {
-      groups['RPM & Load'].push(column)
-    } else if (name.includes('angle') || name.includes('timing') || name.includes('ignition')) {
-      groups['Angles & Timing'].push(column)
-    } else if (name.includes('lambda') || name.includes('fuel') || name.includes('ethanol')) {
-      groups['Lambda & Fuel'].push(column)
-    } else {
-      groups['Other'].push(column)
-    }
-  })
-
-  // Remove empty groups
-  Object.keys(groups).forEach(key => {
-    if (groups[key].length === 0) {
-      delete groups[key]
-    }
-  })
-
-  return groups
-}
