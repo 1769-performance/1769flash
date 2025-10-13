@@ -312,7 +312,7 @@ export function EcuPanel({
                                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                                     <span className="font-medium text-sm break-all min-w-0">{file.name}</span>
                                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                                      {new Date(file.created).toLocaleDateString()}
+                                      {new Date(file.created).toLocaleString()}
                                     </span>
                                   </div>
                                   {file.comment && (
@@ -359,7 +359,7 @@ export function EcuPanel({
                                             <BarChart3 className="h-4 w-4 text-muted-foreground shrink-0" />
                                             <span className="text-sm font-medium break-all min-w-0">{log.name}</span>
                                             <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                                              {new Date(log.created).toLocaleDateString()}
+                                              {new Date(log.created).toLocaleString()}
                                             </span>
                                           </div>
                                           {log.comment && (

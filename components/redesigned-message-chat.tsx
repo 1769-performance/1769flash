@@ -1,193 +1,199 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Send, RefreshCw, User } from "lucide-react"
-import { getJson, postJson, type PaginatedResponse } from "@/lib/api"
-import { useAuth } from "@/hooks/use-auth"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
+import { getJson, postJson, type PaginatedResponse } from "@/lib/api";
+import { RefreshCw, Send, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface MessageData {
-  uuid: string
-  text: string
-  created: string
-  sender_name: string
-  sender_username: string
+  uuid: string;
+  text: string;
+  created: string;
+  sender_name: string;
+  sender_username: string;
 }
 
 interface RedesignedMessageChatProps {
-  projectUuid: string
+  projectUuid: string;
 }
 
-export function RedesignedMessageChat({ projectUuid }: RedesignedMessageChatProps) {
-  const { user } = useAuth()
-  const [messages, setMessages] = useState<MessageData[]>([])
-  const [newMessage, setNewMessage] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [hasNextPage, setHasNextPage] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [currentOffset, setCurrentOffset] = useState(0)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
+export function RedesignedMessageChat({
+  projectUuid,
+}: RedesignedMessageChatProps) {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<MessageData[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const fetchMessages = async (offset: number = 0, append: boolean = false) => {
     try {
       if (!append) {
-        setLoading(true)
+        setLoading(true);
       } else {
-        setLoadingMore(true)
+        setLoadingMore(true);
       }
 
       const data = await getJson<PaginatedResponse<MessageData>>(
         `/projects/${projectUuid}/messages/?limit=20&offset=${offset}`
-      )
-      
-      if (append) {
-        setMessages(prev => [...prev, ...data.results])
-      } else {
-        setMessages(data.results)
-        setCurrentOffset(0)
-      }
-      
-      setHasNextPage(!!data.next)
-      setCurrentOffset(offset + data.results.length)
+      );
 
+      if (append) {
+        setMessages((prev) => [...prev, ...data.results]);
+      } else {
+        setMessages(data.results);
+        setCurrentOffset(0);
+      }
+
+      setHasNextPage(!!data.next);
+      setCurrentOffset(offset + data.results.length);
     } catch (error) {
-      console.error("Failed to fetch messages:", error)
+      console.error("Failed to fetch messages:", error);
     } finally {
-      setLoading(false)
-      setLoadingMore(false)
+      setLoading(false);
+      setLoadingMore(false);
     }
-  }
+  };
 
   const loadMoreMessages = () => {
     if (!loadingMore && hasNextPage) {
-      fetchMessages(currentOffset, true)
+      fetchMessages(currentOffset, true);
     }
-  }
+  };
 
   const fetchUnreadCount = async () => {
     try {
-      const data = await getJson<{ unread_count: number }>(`/projects/${projectUuid}/messages/unread-count/`)
-      setUnreadCount(data.unread_count || 0)
+      const data = await getJson<{ unread_count: number }>(
+        `/projects/${projectUuid}/messages/unread-count/`
+      );
+      setUnreadCount(data.unread_count || 0);
     } catch (error) {
-      console.error("Failed to fetch unread count:", error)
+      console.error("Failed to fetch unread count:", error);
     }
-  }
+  };
 
   const markMessagesRead = async () => {
     try {
-      await postJson(`/projects/${projectUuid}/messages/read/`, {})
-      setUnreadCount(0)
+      await postJson(`/projects/${projectUuid}/messages/read/`, {});
+      setUnreadCount(0);
     } catch (error) {
-      console.error("Failed to mark messages as read:", error)
+      console.error("Failed to mark messages as read:", error);
     }
-  }
+  };
 
   const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newMessage.trim() || sending) return
+    e.preventDefault();
+    if (!newMessage.trim() || sending) return;
 
-    setSending(true)
+    setSending(true);
     try {
-      await postJson(`/projects/${projectUuid}/messages/`, { text: newMessage.trim() })
-      setNewMessage("")
-      await fetchMessages() // Refresh messages after sending
-      scrollToBottom()
+      await postJson(`/projects/${projectUuid}/messages/`, {
+        text: newMessage.trim(),
+      });
+      setNewMessage("");
+      await fetchMessages(); // Refresh messages after sending
+      scrollToBottom();
     } catch (error) {
-      console.error("Failed to send message:", error)
+      console.error("Failed to send message:", error);
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   const getMessageAlignment = (message: MessageData) => {
-    const isCurrentUser = message.sender_username === user?.user.username
-    const isAdmin = message.sender_username === 'admin'
-    
+    const isCurrentUser = message.sender_username === user?.user.username;
+    const isAdmin = message.sender_username === "admin";
+
     if (isAdmin) {
-      return 'center'
+      return "center";
     } else if (isCurrentUser) {
-      return 'right'
+      return "right";
     } else {
-      return 'left'
+      return "left";
     }
-  }
+  };
 
   const getMessageClasses = (alignment: string) => {
     switch (alignment) {
-      case 'center':
+      case "center":
         return {
-          container: 'justify-center',
-          bubble: 'bg-muted border border-border text-muted-foreground max-w-[80%] text-center',
-          icon: 'text-muted-foreground'
-        }
-      case 'right':
+          container: "justify-center",
+          bubble:
+            "bg-muted border border-border text-muted-foreground max-w-[80%] text-center",
+          icon: "text-muted-foreground",
+        };
+      case "right":
         return {
-          container: 'justify-end',
-          bubble: 'bg-primary text-primary-foreground max-w-[70%]',
-          icon: 'text-primary-foreground'
-        }
-      case 'left':
+          container: "justify-end",
+          bubble: "bg-primary text-primary-foreground max-w-[70%]",
+          icon: "text-primary-foreground",
+        };
+      case "left":
       default:
         return {
-          container: 'justify-start',
-          bubble: 'bg-muted max-w-[70%]',
-          icon: 'text-muted-foreground'
-        }
+          container: "justify-start",
+          bubble: "bg-muted max-w-[70%]",
+          icon: "text-muted-foreground",
+        };
     }
-  }
+  };
 
   useEffect(() => {
-    fetchMessages()
-    fetchUnreadCount()
+    fetchMessages();
+    fetchUnreadCount();
 
     // Mark messages as read when component gains focus
     const handleFocus = () => {
       if (unreadCount > 0) {
-        markMessagesRead()
+        markMessagesRead();
       }
-    }
+    };
 
-    window.addEventListener("focus", handleFocus)
+    window.addEventListener("focus", handleFocus);
 
     // Poll for unread count every 15 seconds when page is hidden
     const interval = setInterval(() => {
       if (document.hidden) {
-        fetchUnreadCount()
+        fetchUnreadCount();
       }
-    }, 15000)
+    }, 15000);
 
     return () => {
-      window.removeEventListener("focus", handleFocus)
-      clearInterval(interval)
-    }
-  }, [projectUuid])
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, [projectUuid]);
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     // Auto-mark as read when messages are viewed
     if (messages.length > 0 && unreadCount > 0 && !document.hidden) {
       const timer = setTimeout(() => {
-        markMessagesRead()
-      }, 2000) // Mark as read after 2 seconds of viewing
-      
-      return () => clearTimeout(timer)
+        markMessagesRead();
+      }, 2000); // Mark as read after 2 seconds of viewing
+
+      return () => clearTimeout(timer);
     }
-  }, [messages, unreadCount])
+  }, [messages, unreadCount]);
 
   return (
     <Card className="h-[700px] flex flex-col">
@@ -195,7 +201,6 @@ export function RedesignedMessageChat({ projectUuid }: RedesignedMessageChatProp
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Project Messages</CardTitle>
-            <CardDescription>Communication between dealer and customer</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
@@ -211,7 +216,7 @@ export function RedesignedMessageChat({ projectUuid }: RedesignedMessageChatProp
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col min-h-0">
-        <div 
+        <div
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto space-y-4 mb-4"
         >
@@ -247,17 +252,20 @@ export function RedesignedMessageChat({ projectUuid }: RedesignedMessageChatProp
                   </Button>
                 </div>
               )}
-              
+
               {messages.map((message) => {
-                const alignment = getMessageAlignment(message)
-                const classes = getMessageClasses(alignment)
+                const alignment = getMessageAlignment(message);
+                const classes = getMessageClasses(alignment);
 
                 return (
-                  <div key={message.uuid} className={`flex ${classes.container}`}>
+                  <div
+                    key={message.uuid}
+                    className={`flex ${classes.container}`}
+                  >
                     <div className={`rounded-lg p-3 ${classes.bubble}`}>
                       <div className="flex flex-col items-start mb-1">
                         <span className={`text-xs font-medium ${classes.icon}`}>
-                          {alignment === 'center' ? (
+                          {alignment === "center" ? (
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
                               System
@@ -270,10 +278,12 @@ export function RedesignedMessageChat({ projectUuid }: RedesignedMessageChatProp
                           {new Date(message.created).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {message.text}
+                      </p>
                     </div>
                   </div>
-                )
+                );
               })}
             </>
           )}
@@ -293,5 +303,5 @@ export function RedesignedMessageChat({ projectUuid }: RedesignedMessageChatProp
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

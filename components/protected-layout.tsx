@@ -1,20 +1,29 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
-import { Card, CardContent } from "@/components/ui/card"
+import { AppSidebar } from "@/components/app-sidebar";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 interface ProtectedLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
-function LayoutWithFloatingTrigger({ children }: { children: React.ReactNode }) {
-  const { open, isMobile } = useSidebar()
+function LayoutWithFloatingTrigger({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { open, isMobile } = useSidebar();
 
   return (
     <>
@@ -22,25 +31,25 @@ function LayoutWithFloatingTrigger({ children }: { children: React.ReactNode }) 
       <SidebarInset>
         {/* On mobile, always show trigger. On desktop, show when sidebar is collapsed */}
         {(isMobile || !open) && (
-          <div className="fixed top-4 left-2 z-50 md:left-1">
+          <div className="fixed top-5 left-2 z-50 md:left-1">
             <SidebarTrigger className="h-10 w-10 shadow-lg md:shadow-none" />
           </div>
         )}
         <main className="flex-1 overflow-auto">{children}</main>
       </SidebarInset>
     </>
-  )
+  );
 }
 
 export function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const { user, loading } = useAuth()
-  const router = useRouter()
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login")
+      router.push("/login");
     }
-  }, [user, loading, router])
+  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -54,16 +63,16 @@ export function ProtectedLayout({ children }: ProtectedLayoutProps) {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
     <SidebarProvider>
       <LayoutWithFloatingTrigger>{children}</LayoutWithFloatingTrigger>
     </SidebarProvider>
-  )
+  );
 }
