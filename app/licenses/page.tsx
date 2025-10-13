@@ -74,6 +74,15 @@ export default function LicensesPage() {
     return () => clearTimeout(timer)
   }, [statusFilter, search, ordering, updateParams])
 
+  // Handle immediate search on Enter key
+  const handleSearchSubmit = () => {
+    updateParams({
+      status: statusFilter === "all" ? "" : statusFilter,
+      search: search,
+      ordering: ordering,
+    })
+  }
+
   const toggleExpansion = (licenseUuid: string) => {
     const newExpanded = new Set(expandedLicenses)
     if (newExpanded.has(licenseUuid)) {
@@ -136,6 +145,7 @@ export default function LicensesPage() {
           searchValue={search}
           searchPlaceholder="Search by VIN..."
           onSearchChange={setSearch}
+          onSearchSubmit={handleSearchSubmit}
           filterFields={[
             {
               id: "status",

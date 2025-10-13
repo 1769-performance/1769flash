@@ -72,6 +72,17 @@ export default function ECUsPage() {
     return () => clearTimeout(timer)
   }, [search, hasAssignedVehicle, ecuTypeFilter, svtTypeFilter, ordering, updateParams])
 
+  // Handle immediate search on Enter key
+  const handleSearchSubmit = () => {
+    updateParams({
+      search: search,
+      has_assigned_vehicle: hasAssignedVehicle === "all" ? "" : hasAssignedVehicle,
+      ecu_type: ecuTypeFilter === "all" ? "" : ecuTypeFilter,
+      svt_type: svtTypeFilter.join(","),
+      ordering: ordering,
+    })
+  }
+
   const svtTypeOptions: MultiSelectOption[] = [
     { label: "Main", value: "main" },
     { label: "Actual", value: "actual" },
@@ -128,6 +139,7 @@ export default function ECUsPage() {
           searchValue={search}
           searchPlaceholder="Search VIN, serial, name..."
           onSearchChange={setSearch}
+          onSearchSubmit={handleSearchSubmit}
           filterFields={[
             {
               id: "vehicleAssignment",

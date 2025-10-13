@@ -50,6 +50,13 @@ export default function CustomersPage() {
     return () => clearTimeout(timer)
   }, [search, updateParams])
 
+  // Handle immediate search on Enter key
+  const handleSearchSubmit = () => {
+    updateParams({
+      search: search,
+    })
+  }
+
   const toggleExpansion = (customerUuid: string) => {
     const newExpanded = new Set(expandedCustomers)
     if (newExpanded.has(customerUuid)) {
@@ -112,6 +119,7 @@ export default function CustomersPage() {
           searchValue={search}
           searchPlaceholder="Search by username, email, or name..."
           onSearchChange={setSearch}
+          onSearchSubmit={handleSearchSubmit}
           onReset={handleResetFilters}
           hasActiveFilters={search.trim() !== ""}
           activeFilterCount={search.trim() !== "" ? 1 : 0}

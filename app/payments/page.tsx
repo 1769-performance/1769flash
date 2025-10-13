@@ -61,6 +61,15 @@ export default function PaymentsPage() {
     return () => clearTimeout(timer)
   }, [statusFilter, search, ordering, updateParams])
 
+  // Handle immediate search on Enter key
+  const handleSearchSubmit = () => {
+    updateParams({
+      status: statusFilter === "all" ? "" : statusFilter,
+      search: search,
+      ordering: ordering,
+    })
+  }
+
   // Dynamic columns based on user role
   const columns = [
     {
@@ -131,6 +140,7 @@ export default function PaymentsPage() {
           searchValue={search}
           searchPlaceholder="Search description, VIN..."
           onSearchChange={setSearch}
+          onSearchSubmit={handleSearchSubmit}
           filterFields={[
             {
               id: "status",

@@ -20,6 +20,8 @@ interface ListFiltersProps {
   searchPlaceholder?: string
   /** Callback when search value changes */
   onSearchChange: (value: string) => void
+  /** Callback when search is submitted (Enter key) - triggers immediate search */
+  onSearchSubmit?: () => void
   /** Additional filter fields to display */
   filterFields?: FilterField[]
   /** Sort field content */
@@ -38,6 +40,7 @@ export function ListFilters({
   searchValue,
   searchPlaceholder = "Search...",
   onSearchChange,
+  onSearchSubmit,
   filterFields = [],
   sortField,
   onReset,
@@ -49,6 +52,10 @@ export function ListFilters({
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    // Trigger immediate search when Enter is pressed
+    if (onSearchSubmit) {
+      onSearchSubmit()
+    }
   }
 
   return (
@@ -59,7 +66,7 @@ export function ListFilters({
         <form onSubmit={handleSearchSubmit} className="flex-1 relative min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            type="search"
+            type="text"
             placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}

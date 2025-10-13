@@ -258,8 +258,12 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
         const initialColumns: VisibleColumn[] = parsedData.columns.map(
           (col) => {
             const columnNameLower = col.name.toLowerCase();
-            const isEngineRPM = columnNameLower.includes("engine") && columnNameLower.includes("rpm");
-            const isAcceleratorPedal = columnNameLower.includes("accelerator") && columnNameLower.includes("pedal");
+            const isEngineRPM =
+              columnNameLower.includes("engine") &&
+              columnNameLower.includes("rpm");
+            const isAcceleratorPedal =
+              columnNameLower.includes("accelerator") &&
+              columnNameLower.includes("pedal");
 
             return {
               ...col,
@@ -849,11 +853,6 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
                     )}
                   </LineChart>
                 </ResponsiveContainer>
-
-                {/* Instructions overlay */}
-                <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm p-2 rounded-md border text-xs text-muted-foreground">
-                  <p>💡 Click and drag on chart to zoom to selection</p>
-                </div>
               </div>
             ) : (
               <div className="h-full flex items-center justify-center">

@@ -60,6 +60,15 @@ export default function ProjectsPage() {
     return () => clearTimeout(timer)
   }, [statusFilter, search, ordering, updateParams])
 
+  // Handle immediate search on Enter key
+  const handleSearchSubmit = () => {
+    updateParams({
+      status: statusFilter === "all" ? "" : statusFilter,
+      search: search,
+      ordering: ordering,
+    })
+  }
+
   // Dynamic columns based on user role
   const columns = [
     {
@@ -139,6 +148,7 @@ export default function ProjectsPage() {
           searchValue={search}
           searchPlaceholder="Search title, VIN, names..."
           onSearchChange={setSearch}
+          onSearchSubmit={handleSearchSubmit}
           filterFields={[
             {
               id: "status",
