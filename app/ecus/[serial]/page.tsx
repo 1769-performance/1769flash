@@ -5,16 +5,17 @@ import { useParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Cpu, Car, ExternalLink, User } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ArrowLeft, Cpu, Car, ExternalLink, User, UserPlus } from "lucide-react"
 import Link from "next/link"
-import { getJson, type ECU, type Log } from "@/lib/api"
+import { getJson, patchJson, type ECU, type Log, type Customer } from "@/lib/api"
 import { useAuth } from "@/hooks/use-auth"
 import { EcuPanel } from "@/components/ecu-panel"
 import { ChartVisualizer } from "@/components/chart-visualizer"
-import { 
-  formatManufacturingDate, 
-  formatAddress, 
-  getEcuTypeInfo 
+import {
+  formatManufacturingDate,
+  formatAddress,
+  getEcuTypeInfo
 } from "@/lib/ecu-utils"
 
 export default function EcuDetailPage() {
@@ -24,10 +25,17 @@ export default function EcuDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedEcuSerial, setSelectedEcuSerial] = useState<string | null>(null)
-  
+
   // Chart visualization state
   const [chartLog, setChartLog] = useState<Log | null>(null)
   const [chartModalOpen, setChartModalOpen] = useState(false)
+
+  // Customer assignment state (for dealers)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("")
+  const [assigningCustomer, setAssigningCustomer] = useState(false)
+  const [assignmentError, setAssignmentError] = useState<string | null>(null)
+  const [assignmentSuccess, setAssignmentSuccess] = useState(false)
 
   useEffect(() => {
     const fetchEcu = async () => {
@@ -48,6 +56,35 @@ export default function EcuDetailPage() {
     fetchEcu()
   }, [params.serial])
 
+  // Fetch customers for dealers
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (user?.profile_type !== "dealer") return
+
+      try {
+        const response = await getJson<{ results: Customer[] } | Customer[]>("/accounts/customers/")
+        // Handle both paginated and non-paginated responses
+        const customersData = Array.isArray(response) ? response : response.results || []
+        setCustomers(customersData)
+      } catch (err) {
+        console.error("Failed to load customers:", err)
+      }
+    }
+
+    fetchCustomers()
+  }, [user?.profile_type])
+
+  // Set selected customer when ECU data is loaded or updated
+  useEffect(() => {
+    if (ecu?.customer && customers.length > 0) {
+      // Find customer UUID from the customer string (username)
+      const customer = customers.find(c => c.user.username === ecu.customer)
+      if (customer) {
+        setSelectedCustomer(customer.uuid)
+      }
+    }
+  }, [ecu?.customer, customers])
+
   const refetchEcu = async () => {
     if (!params.serial) return
     try {
@@ -66,6 +103,32 @@ export default function EcuDetailPage() {
   const handleChartClose = () => {
     setChartModalOpen(false)
     setChartLog(null)
+  }
+
+  const handleAssignCustomer = async () => {
+    if (!selectedCustomer || !params.serial) return
+
+    try {
+      setAssigningCustomer(true)
+      setAssignmentError(null)
+      setAssignmentSuccess(false)
+
+      await patchJson(`/ecus/${params.serial}/`, {
+        customer: selectedCustomer,
+      })
+
+      // Refetch ECU to update display
+      await refetchEcu()
+      setAssignmentSuccess(true)
+      // Don't clear selection - keep showing the assigned customer
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setAssignmentSuccess(false), 3000)
+    } catch (err) {
+      setAssignmentError(err instanceof Error ? err.message : "Failed to assign customer")
+    } finally {
+      setAssigningCustomer(false)
+    }
   }
 
   if (loading) {
@@ -211,6 +274,57 @@ export default function EcuDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Customer Assignment (Dealers only) */}
+        {user?.profile_type === "dealer" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Assign Customer
+              </CardTitle>
+              <CardDescription>
+                Assign this ECU to a customer
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                    <SelectTrigger className="w-full sm:w-[300px]">
+                      <SelectValue placeholder="Select customer..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.uuid} value={customer.uuid}>
+                          {customer.user.username} ({customer.user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handleAssignCustomer}
+                    disabled={!selectedCustomer || assigningCustomer}
+                  >
+                    {assigningCustomer ? "Assigning..." : "Assign Customer"}
+                  </Button>
+                </div>
+
+                {assignmentSuccess && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200 rounded-md text-sm">
+                    Customer assigned successfully!
+                  </div>
+                )}
+
+                {assignmentError && (
+                  <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
+                    {assignmentError}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ECU Panel for SVT/SVK and File Management */}
         <EcuPanel

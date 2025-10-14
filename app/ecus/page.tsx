@@ -30,11 +30,33 @@ export default function ECUsPage() {
   // Filter states
   const [search, setSearch] = useState<string>("")
   const [hasAssignedVehicle, setHasAssignedVehicle] = useState<string>("all")
+  const [hasAssignedDealer, setHasAssignedDealer] = useState<string>("all")
+  const [hasAssignedCustomer, setHasAssignedCustomer] = useState<string>("all")
   const [ecuTypeFilter, setEcuTypeFilter] = useState<string>("all")
   const [svtTypeFilter, setSvtTypeFilter] = useState<string[]>([])
   const [ordering, setOrdering] = useState<string>("-created")
   const [expandedEcus, setExpandedEcus] = useState<Set<string>>(new Set())
   const [expandedSvts, setExpandedSvts] = useState<Set<string>>(new Set())
+
+  // Build params conditionally based on user role
+  const buildParams = () => {
+    const params: Record<string, string> = {
+      search: search,
+      has_assigned_vehicle: hasAssignedVehicle === "all" ? "" : hasAssignedVehicle,
+      type: ecuTypeFilter === "all" ? "" : ecuTypeFilter,
+      svt_type: svtTypeFilter.join(","),
+      ordering: ordering,
+    }
+
+    // Add role-specific filters
+    if (user?.profile_type === "customer") {
+      params.has_assigned_dealer = hasAssignedDealer === "all" ? "" : hasAssignedDealer
+    } else if (user?.profile_type === "dealer") {
+      params.has_assigned_customer = hasAssignedCustomer === "all" ? "" : hasAssignedCustomer
+    }
+
+    return params
+  }
 
   const {
     data: ecus,
@@ -49,38 +71,20 @@ export default function ECUsPage() {
     totalPages,
     updateParams,
   } = usePaginatedList<ECU>("/ecus/", {
-    initialParams: {
-      search: search,
-      has_assigned_vehicle: hasAssignedVehicle === "all" ? "" : hasAssignedVehicle,
-      ecu_type: ecuTypeFilter === "all" ? "" : ecuTypeFilter,
-      svt_type: svtTypeFilter.join(","),
-      ordering: ordering,
-    }
+    initialParams: buildParams()
   })
 
   // Update params when filters change (with debouncing)
   useEffect(() => {
     const timer = setTimeout(() => {
-      updateParams({
-        search: search,
-        has_assigned_vehicle: hasAssignedVehicle === "all" ? "" : hasAssignedVehicle,
-        ecu_type: ecuTypeFilter === "all" ? "" : ecuTypeFilter,
-        svt_type: svtTypeFilter.join(","),
-        ordering: ordering,
-      })
+      updateParams(buildParams())
     }, 300) // Debounce for 300ms
     return () => clearTimeout(timer)
-  }, [search, hasAssignedVehicle, ecuTypeFilter, svtTypeFilter, ordering, updateParams])
+  }, [search, hasAssignedVehicle, hasAssignedDealer, hasAssignedCustomer, ecuTypeFilter, svtTypeFilter, ordering, user?.profile_type])
 
   // Handle immediate search on Enter key
   const handleSearchSubmit = () => {
-    updateParams({
-      search: search,
-      has_assigned_vehicle: hasAssignedVehicle === "all" ? "" : hasAssignedVehicle,
-      ecu_type: ecuTypeFilter === "all" ? "" : ecuTypeFilter,
-      svt_type: svtTypeFilter.join(","),
-      ordering: ordering,
-    })
+    updateParams(buildParams())
   }
 
   const svtTypeOptions: MultiSelectOption[] = [
@@ -112,6 +116,8 @@ export default function ECUsPage() {
   const handleResetFilters = () => {
     setSearch("")
     setHasAssignedVehicle("all")
+    setHasAssignedDealer("all")
+    setHasAssignedCustomer("all")
     setEcuTypeFilter("all")
     setSvtTypeFilter([])
     setOrdering("-created")
@@ -121,7 +127,8 @@ export default function ECUsPage() {
     router.push(`/ecus/${ecu.serial}`)
   }
 
-  const hasActiveFilters = search.trim() !== "" || hasAssignedVehicle !== "all" || 
+  const hasActiveFilters = search.trim() !== "" || hasAssignedVehicle !== "all" ||
+                          hasAssignedDealer !== "all" || hasAssignedCustomer !== "all" ||
                           ecuTypeFilter !== "all" || svtTypeFilter.length > 0 || ordering !== "-created"
 
   return (
@@ -157,6 +164,40 @@ export default function ECUsPage() {
                 </Select>
               ),
             },
+            // Show Dealer Assignment filter for customers
+            ...(user?.profile_type === "customer" ? [{
+              id: "dealerAssignment",
+              label: "Dealer Assignment",
+              content: (
+                <Select value={hasAssignedDealer} onValueChange={setHasAssignedDealer}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All ECUs</SelectItem>
+                    <SelectItem value="true">Assigned to Dealer</SelectItem>
+                    <SelectItem value="false">Unassigned</SelectItem>
+                  </SelectContent>
+                </Select>
+              ),
+            }] : []),
+            // Show Customer Assignment filter for dealers
+            ...(user?.profile_type === "dealer" ? [{
+              id: "customerAssignment",
+              label: "Customer Assignment",
+              content: (
+                <Select value={hasAssignedCustomer} onValueChange={setHasAssignedCustomer}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All ECUs</SelectItem>
+                    <SelectItem value="true">Assigned to Customer</SelectItem>
+                    <SelectItem value="false">Unassigned</SelectItem>
+                  </SelectContent>
+                </Select>
+              ),
+            }] : []),
             {
               id: "ecuType",
               label: "ECU Type",
@@ -206,7 +247,14 @@ export default function ECUsPage() {
           }
           onReset={handleResetFilters}
           hasActiveFilters={hasActiveFilters}
-          activeFilterCount={[search.trim() !== "", hasAssignedVehicle !== "all", ecuTypeFilter !== "all", svtTypeFilter.length > 0].filter(Boolean).length}
+          activeFilterCount={[
+            search.trim() !== "",
+            hasAssignedVehicle !== "all",
+            hasAssignedDealer !== "all",
+            hasAssignedCustomer !== "all",
+            ecuTypeFilter !== "all",
+            svtTypeFilter.length > 0
+          ].filter(Boolean).length}
         />
       </div>
 
