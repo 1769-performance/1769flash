@@ -41,6 +41,13 @@ export function NewProjectDialog({ onProjectCreated }: NewProjectDialogProps) {
   const [ecusLoading, setEcusLoading] = useState(false)
   const [defaultDealer, setDefaultDealer] = useState<string>("")
 
+  // Check URL hash on mount to auto-open dialog
+  useEffect(() => {
+    if (window.location.hash === '#new-project') {
+      setOpen(true)
+    }
+  }, [])
+
   // Fetch vehicles when dialog opens
   useEffect(() => {
     const fetchVehicles = async () => {
@@ -206,7 +213,7 @@ export function NewProjectDialog({ onProjectCreated }: NewProjectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button id="new-project">
           <Plus className="h-4 w-4 mr-2" />
           New Project
         </Button>

@@ -311,6 +311,15 @@ export function EcuPanel({
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                                     <span className="font-medium text-sm break-all min-w-0">{file.name}</span>
+                                    <Badge
+                                      variant="secondary"
+                                      className={file.is_flashed
+                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                                      }
+                                    >
+                                      {file.is_flashed ? "Flashed" : "Not Used"}
+                                    </Badge>
                                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                                       {new Date(file.created).toLocaleString()}
                                     </span>

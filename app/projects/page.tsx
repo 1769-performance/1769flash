@@ -1,25 +1,39 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DataTable } from "@/components/data-table"
-import { NewProjectDialog } from "@/components/new-project-dialog"
-import { ListFilters } from "@/components/list-filters"
-import { usePaginatedList } from "@/hooks/use-paginated-list"
-import { useAuth } from "@/hooks/use-auth"
-import type { Project } from "@/lib/api"
+import { DataTable } from "@/components/data-table";
+import { ListFilters } from "@/components/list-filters";
+import { NewProjectDialog } from "@/components/new-project-dialog";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/hooks/use-auth";
+import { usePaginatedList } from "@/hooks/use-paginated-list";
+import type { Project } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  required_customer_action: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-  required_dealer_action: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  required_customer_action:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  required_dealer_action:
+    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+  completed:
+    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   closed: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-}
+};
 
 const statusLabels = {
   new: "New",
@@ -27,16 +41,16 @@ const statusLabels = {
   required_dealer_action: "Required Dealer Action",
   completed: "Completed",
   closed: "Closed",
-}
+};
 
 export default function ProjectsPage() {
-  const router = useRouter()
-  const { user } = useAuth()
-  
+  const router = useRouter();
+  const { user } = useAuth();
+
   // Filter states
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [search, setSearch] = useState<string>("")
-  const [ordering, setOrdering] = useState<string>("-created")
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState<string>("");
+  const [ordering, setOrdering] = useState<string>("-created");
 
   const {
     data: projects,
@@ -55,8 +69,8 @@ export default function ProjectsPage() {
       status: statusFilter === "all" ? "" : statusFilter,
       search: search,
       ordering: ordering,
-    }
-  })
+    },
+  });
 
   // Update params when filters change (with debouncing)
   useEffect(() => {
@@ -65,10 +79,10 @@ export default function ProjectsPage() {
         status: statusFilter === "all" ? "" : statusFilter,
         search: search,
         ordering: ordering,
-      })
-    }, 300) // Debounce for 300ms
-    return () => clearTimeout(timer)
-  }, [statusFilter, search, ordering, updateParams])
+      });
+    }, 300); // Debounce for 300ms
+    return () => clearTimeout(timer);
+  }, [statusFilter, search, ordering, updateParams]);
 
   // Handle immediate search on Enter key
   const handleSearchSubmit = () => {
@@ -76,8 +90,8 @@ export default function ProjectsPage() {
       status: statusFilter === "all" ? "" : statusFilter,
       search: search,
       ordering: ordering,
-    })
-  }
+    });
+  };
 
   // Dynamic columns based on user role
   const columns = [
@@ -89,7 +103,10 @@ export default function ProjectsPage() {
       key: "status" as keyof Project,
       header: "Status",
       render: (status: string) => (
-        <Badge variant="secondary" className={statusColors[status as keyof typeof statusColors]}>
+        <Badge
+          variant="secondary"
+          className={statusColors[status as keyof typeof statusColors]}
+        >
           {statusLabels[status as keyof typeof statusLabels] || status}
         </Badge>
       ),
@@ -99,15 +116,23 @@ export default function ProjectsPage() {
       header: "VIN",
     },
     // Show Dealer column only if user is customer
-    ...(user?.profile_type === "customer" ? [{
-      key: "dealer" as keyof Project,
-      header: "Dealer",
-    }] : []),
-    // Show Customer column only if user is dealer  
-    ...(user?.profile_type === "dealer" ? [{
-      key: "customer" as keyof Project,
-      header: "Customer",
-    }] : []),
+    ...(user?.profile_type === "customer"
+      ? [
+          {
+            key: "dealer" as keyof Project,
+            header: "Dealer",
+          },
+        ]
+      : []),
+    // Show Customer column only if user is dealer
+    ...(user?.profile_type === "dealer"
+      ? [
+          {
+            key: "customer" as keyof Project,
+            header: "Customer",
+          },
+        ]
+      : []),
     {
       key: "created" as keyof Project,
       header: "Created",
@@ -128,24 +153,24 @@ export default function ProjectsPage() {
       header: "Modified",
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
-  ]
+  ];
 
   const handleResetFilters = () => {
-    setStatusFilter("all")
-    setSearch("")
-    setOrdering("-created")
-  }
+    setStatusFilter("all");
+    setSearch("");
+    setOrdering("-created");
+  };
 
   const handleRowClick = (project: Project) => {
-    router.push(`/projects/${project.uuid}`)
-  }
+    router.push(`/projects/${project.uuid}`);
+  };
 
   return (
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-6 ml-6">
         <div>
           <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-muted-foreground">Manage your automotive projects</p>
+          <p className="text-muted-foreground">Manage your tuning requests</p>
         </div>
         {user?.profile_type === "customer" && (
           <NewProjectDialog onProjectCreated={refetch} />
@@ -171,8 +196,12 @@ export default function ProjectsPage() {
                   <SelectContent>
                     <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="required_customer_action">Required Customer Action</SelectItem>
-                    <SelectItem value="required_dealer_action">Required Dealer Action</SelectItem>
+                    <SelectItem value="required_customer_action">
+                      Required Customer Action
+                    </SelectItem>
+                    <SelectItem value="required_dealer_action">
+                      Required Dealer Action
+                    </SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="closed">Closed</SelectItem>
                   </SelectContent>
@@ -189,22 +218,30 @@ export default function ProjectsPage() {
                 <SelectItem value="-created">Newest first</SelectItem>
                 <SelectItem value="created">Oldest first</SelectItem>
                 <SelectItem value="-modified">Recently modified</SelectItem>
-                <SelectItem value="modified">Least recently modified</SelectItem>
+                <SelectItem value="modified">
+                  Least recently modified
+                </SelectItem>
                 <SelectItem value="title">Title A-Z</SelectItem>
                 <SelectItem value="-title">Title Z-A</SelectItem>
               </SelectContent>
             </Select>
           }
           onReset={handleResetFilters}
-          hasActiveFilters={statusFilter !== "all" || search !== "" || ordering !== "-created"}
-          activeFilterCount={[statusFilter !== "all", search !== ""].filter(Boolean).length}
+          hasActiveFilters={
+            statusFilter !== "all" || search !== "" || ordering !== "-created"
+          }
+          activeFilterCount={
+            [statusFilter !== "all", search !== ""].filter(Boolean).length
+          }
         />
       </div>
 
       {error && (
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <p className="text-destructive">Error loading projects: {error?.message || 'Unknown error'}</p>
+            <p className="text-destructive">
+              Error loading projects: {error?.message || "Unknown error"}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -212,7 +249,9 @@ export default function ProjectsPage() {
       <Card>
         <CardHeader>
           <CardTitle>All Projects</CardTitle>
-          <CardDescription>Click on a project to view details and manage it</CardDescription>
+          <CardDescription>
+            Click on a project to view details and manage it
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <DataTable
@@ -232,5 +271,5 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

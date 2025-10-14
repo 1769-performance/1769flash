@@ -1,46 +1,70 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ListFilters } from "@/components/list-filters"
-import { usePaginatedList } from "@/hooks/use-paginated-list"
-import { useAuth } from "@/hooks/use-auth"
-import type { License } from "@/lib/api"
-import { FileText, ChevronDown, ChevronRight, Eye, EyeOff, AlertTriangle } from "lucide-react"
+import { ListFilters } from "@/components/list-filters";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/hooks/use-auth";
+import { usePaginatedList } from "@/hooks/use-paginated-list";
+import type { License } from "@/lib/api";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  FileText,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const statusColors: Record<string, string> = {
   issued: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  pending_generation: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  awaiting_hardware: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300", 
-  required_update: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  pending_generation:
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  awaiting_hardware:
+    "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  required_update:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
   failed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   expired: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-}
+};
 
 const statusLabels: Record<string, string> = {
   awaiting_hardware: "Awaiting Hardware Info",
-  pending_generation: "Pending Generation Pipeline", 
+  pending_generation: "Pending Generation Pipeline",
   issued: "Issued",
   required_update: "Update Is Required",
   failed: "Failed",
-  expired: "Expired"
-}
+  expired: "Expired",
+};
 
 export default function LicensesPage() {
-  const router = useRouter()
-  const { user } = useAuth()
-  
+  const router = useRouter();
+  const { user } = useAuth();
+
   // Filter states
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [search, setSearch] = useState<string>("")
-  const [ordering, setOrdering] = useState<string>("-created")
-  const [expandedLicenses, setExpandedLicenses] = useState<Set<string>>(new Set())
-  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set())
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState<string>("");
+  const [ordering, setOrdering] = useState<string>("-created");
+  const [expandedLicenses, setExpandedLicenses] = useState<Set<string>>(
+    new Set()
+  );
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
   const {
     data: licenses,
@@ -59,8 +83,8 @@ export default function LicensesPage() {
       status: statusFilter === "all" ? "" : statusFilter,
       search: search,
       ordering: ordering,
-    }
-  })
+    },
+  });
 
   // Update params when filters change (with debouncing)
   useEffect(() => {
@@ -69,10 +93,10 @@ export default function LicensesPage() {
         status: statusFilter === "all" ? "" : statusFilter,
         search: search,
         ordering: ordering,
-      })
-    }, 300) // Debounce for 300ms
-    return () => clearTimeout(timer)
-  }, [statusFilter, search, ordering, updateParams])
+      });
+    }, 300); // Debounce for 300ms
+    return () => clearTimeout(timer);
+  }, [statusFilter, search, ordering, updateParams]);
 
   // Handle immediate search on Enter key
   const handleSearchSubmit = () => {
@@ -80,55 +104,56 @@ export default function LicensesPage() {
       status: statusFilter === "all" ? "" : statusFilter,
       search: search,
       ordering: ordering,
-    })
-  }
+    });
+  };
 
   const toggleExpansion = (licenseUuid: string) => {
-    const newExpanded = new Set(expandedLicenses)
+    const newExpanded = new Set(expandedLicenses);
     if (newExpanded.has(licenseUuid)) {
-      newExpanded.delete(licenseUuid)
+      newExpanded.delete(licenseUuid);
     } else {
-      newExpanded.add(licenseUuid)
+      newExpanded.add(licenseUuid);
     }
-    setExpandedLicenses(newExpanded)
-  }
+    setExpandedLicenses(newExpanded);
+  };
 
   const toggleKeyVisibility = (licenseUuid: string) => {
-    const newVisible = new Set(visibleKeys)
+    const newVisible = new Set(visibleKeys);
     if (newVisible.has(licenseUuid)) {
-      newVisible.delete(licenseUuid)
+      newVisible.delete(licenseUuid);
     } else {
-      newVisible.add(licenseUuid)
+      newVisible.add(licenseUuid);
     }
-    setVisibleKeys(newVisible)
-  }
+    setVisibleKeys(newVisible);
+  };
 
   const isFeatureExpired = (expiresAt: string | null) => {
-    if (!expiresAt) return false
-    return new Date(expiresAt) < new Date()
-  }
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  };
 
   const isFeatureExpiringSoon = (expiresAt: string | null) => {
-    if (!expiresAt) return false
-    const expiryDate = new Date(expiresAt)
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-    return expiryDate < thirtyDaysFromNow && expiryDate > new Date()
-  }
+    if (!expiresAt) return false;
+    const expiryDate = new Date(expiresAt);
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    return expiryDate < thirtyDaysFromNow && expiryDate > new Date();
+  };
 
   const getEnabledFeaturesCount = (license: License) => {
-    return Object.values(license.features).filter(feature => feature.enabled).length
-  }
+    return Object.values(license.features).filter((feature) => feature.enabled)
+      .length;
+  };
 
   const handleResetFilters = () => {
-    setStatusFilter("all")
-    setSearch("")
-    setOrdering("-created")
-  }
+    setStatusFilter("all");
+    setSearch("");
+    setOrdering("-created");
+  };
 
   const handleRowClick = (license: License) => {
-    router.push(`/licenses/${license.uuid}`)
-  }
+    router.push(`/licenses/${license.uuid}`);
+  };
 
   return (
     <div className="p-4 md:p-6">
@@ -158,9 +183,15 @@ export default function LicensesPage() {
                   <SelectContent>
                     <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="issued">Issued</SelectItem>
-                    <SelectItem value="pending_generation">Pending Generation</SelectItem>
-                    <SelectItem value="awaiting_hardware">Awaiting Hardware</SelectItem>
-                    <SelectItem value="required_update">Update Required</SelectItem>
+                    <SelectItem value="pending_generation">
+                      Pending Generation
+                    </SelectItem>
+                    <SelectItem value="awaiting_hardware">
+                      Awaiting Hardware
+                    </SelectItem>
+                    <SelectItem value="required_update">
+                      Update Required
+                    </SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
                     <SelectItem value="expired">Expired</SelectItem>
                   </SelectContent>
@@ -177,22 +208,30 @@ export default function LicensesPage() {
                 <SelectItem value="-created">Newest first</SelectItem>
                 <SelectItem value="created">Oldest first</SelectItem>
                 <SelectItem value="-modified">Recently modified</SelectItem>
-                <SelectItem value="modified">Least recently modified</SelectItem>
+                <SelectItem value="modified">
+                  Least recently modified
+                </SelectItem>
                 <SelectItem value="status">Status A-Z</SelectItem>
                 <SelectItem value="-status">Status Z-A</SelectItem>
               </SelectContent>
             </Select>
           }
           onReset={handleResetFilters}
-          hasActiveFilters={statusFilter !== "all" || search !== "" || ordering !== "-created"}
-          activeFilterCount={[statusFilter !== "all", search !== ""].filter(Boolean).length}
+          hasActiveFilters={
+            statusFilter !== "all" || search !== "" || ordering !== "-created"
+          }
+          activeFilterCount={
+            [statusFilter !== "all", search !== ""].filter(Boolean).length
+          }
         />
       </div>
 
       {error && (
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <p className="text-destructive">Error loading licenses: {error?.message || 'Unknown error'}</p>
+            <p className="text-destructive">
+              Error loading licenses: {error?.message || "Unknown error"}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -203,7 +242,7 @@ export default function LicensesPage() {
             <FileText className="h-6 w-6" />
             Software Licenses ({licenses.length})
           </CardTitle>
-          <CardDescription>Click on a license to view details, or expand to see features</CardDescription>
+          <CardDescription>Click on a license to see features</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -223,33 +262,40 @@ export default function LicensesPage() {
           ) : (
             <div className="space-y-4">
               {licenses.map((license) => {
-                const isExpanded = expandedLicenses.has(license.uuid)
-                
+                const isExpanded = expandedLicenses.has(license.uuid);
+
                 return (
-                  <div key={license.uuid} className="border rounded-lg overflow-hidden">
-                    <div 
+                  <div
+                    key={license.uuid}
+                    className="border rounded-lg overflow-hidden"
+                  >
+                    <div
                       className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => handleRowClick(license)}
+                      onClick={() => toggleExpansion(license.uuid)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 flex-1">
                           <div className="min-w-0">
                             <p className="text-sm font-medium">Vehicle</p>
-                            <p className="text-sm font-mono text-muted-foreground">{license.vehicle}</p>
+                            <p className="text-sm font-mono text-muted-foreground">
+                              {license.vehicle}
+                            </p>
                           </div>
-                          
+
                           <div className="min-w-0">
                             <p className="text-sm font-medium">License Key</p>
                             <div className="flex items-center gap-2">
                               <p className="text-xs font-mono text-muted-foreground break-all">
-                                {visibleKeys.has(license.uuid) ? license.uuid : `${license.uuid.slice(0, 8)}...`}
+                                {visibleKeys.has(license.uuid)
+                                  ? license.uuid
+                                  : `${license.uuid.slice(0, 8)}...`}
                               </p>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  toggleKeyVisibility(license.uuid)
+                                  e.stopPropagation();
+                                  toggleKeyVisibility(license.uuid);
                                 }}
                                 className="h-6 w-6 p-0 shrink-0"
                               >
@@ -261,24 +307,27 @@ export default function LicensesPage() {
                               </Button>
                             </div>
                           </div>
-                          
+
                           <div>
                             <p className="text-sm font-medium">Status</p>
-                            <Badge 
-                              variant="secondary" 
-                              className={`${statusColors[license.status] || ""} text-xs whitespace-nowrap`}
+                            <Badge
+                              variant="secondary"
+                              className={`${
+                                statusColors[license.status] || ""
+                              } text-xs whitespace-nowrap`}
                             >
                               {statusLabels[license.status] || license.status}
                             </Badge>
                           </div>
-                          
+
                           <div>
                             <p className="text-sm font-medium">Features</p>
                             <p className="text-sm text-muted-foreground">
-                              {getEnabledFeaturesCount(license)} of {Object.keys(license.features).length} enabled
+                              {getEnabledFeaturesCount(license)} of{" "}
+                              {Object.keys(license.features).length} enabled
                             </p>
                           </div>
-                          
+
                           <div>
                             <p className="text-sm font-medium">Created</p>
                             <p className="text-sm text-muted-foreground whitespace-nowrap">
@@ -286,7 +335,7 @@ export default function LicensesPage() {
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 ml-4">
                           {license.expiration_date && (
                             <div className="text-right">
@@ -295,27 +344,35 @@ export default function LicensesPage() {
                                 {isFeatureExpired(license.expiration_date) && (
                                   <AlertTriangle className="h-4 w-4 text-red-500" />
                                 )}
-                                {!isFeatureExpired(license.expiration_date) && 
-                                 isFeatureExpiringSoon(license.expiration_date) && (
-                                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                                )}
+                                {!isFeatureExpired(license.expiration_date) &&
+                                  isFeatureExpiringSoon(
+                                    license.expiration_date
+                                  ) && (
+                                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                  )}
                                 <p className="text-sm text-muted-foreground">
-                                  {new Date(license.expiration_date).toLocaleDateString()}
+                                  {new Date(
+                                    license.expiration_date
+                                  ).toLocaleDateString()}
                                 </p>
                               </div>
                             </div>
                           )}
-                          
+
                           {Object.keys(license.features).length > 0 && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={(e) => {
-                                e.stopPropagation()
-                                toggleExpansion(license.uuid)
+                                e.stopPropagation();
+                                toggleExpansion(license.uuid);
                               }}
                             >
-                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
                               Features
                             </Button>
                           )}
@@ -328,51 +385,79 @@ export default function LicensesPage() {
                       <Collapsible open={isExpanded}>
                         <CollapsibleContent>
                           <div className="border-t p-4 bg-muted/20">
-                            <h4 className="text-sm font-medium mb-3">Features</h4>
+                            <h4 className="text-sm font-medium mb-3">
+                              Features
+                            </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {Object.entries(license.features).map(([featureName, feature]) => (
-                                <div key={featureName} className="space-y-2 p-3 border rounded-md bg-background">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-sm font-medium uppercase">
-                                      {featureName}
-                                    </p>
-                                    <Badge 
-                                      variant={feature.enabled ? "default" : "secondary"}
-                                      className={feature.enabled ? "bg-green-100 text-green-800" : ""}
-                                    >
-                                      {feature.enabled ? "Enabled" : "Disabled"}
-                                    </Badge>
-                                  </div>
-                                  
-                                  {feature.enabled && feature.expires_at && (
-                                    <div className="flex items-center gap-1 text-sm">
-                                      {isFeatureExpired(feature.expires_at) && (
-                                        <AlertTriangle className="h-3 w-3 text-red-500" />
-                                      )}
-                                      {!isFeatureExpired(feature.expires_at) && 
-                                       isFeatureExpiringSoon(feature.expires_at) && (
-                                        <AlertTriangle className="h-3 w-3 text-yellow-500" />
-                                      )}
-                                      <span className="text-muted-foreground">
-                                        Expires: {new Date(feature.expires_at).toLocaleDateString()}
-                                      </span>
+                              {Object.entries(license.features).map(
+                                ([featureName, feature]) => (
+                                  <div
+                                    key={featureName}
+                                    className="space-y-2 p-3 border rounded-md bg-background"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-sm font-medium uppercase">
+                                        {featureName}
+                                      </p>
+                                      <Badge
+                                        variant={
+                                          feature.enabled
+                                            ? "default"
+                                            : "secondary"
+                                        }
+                                        className={
+                                          feature.enabled
+                                            ? "bg-green-100 text-green-800"
+                                            : ""
+                                        }
+                                      >
+                                        {feature.enabled
+                                          ? "Enabled"
+                                          : "Disabled"}
+                                      </Badge>
                                     </div>
-                                  )}
-                                  
-                                  {feature.enabled && !feature.expires_at && (
-                                    <p className="text-sm text-muted-foreground">No expiration</p>
-                                  )}
-                                </div>
-                              ))}
+
+                                    {feature.enabled && feature.expires_at && (
+                                      <div className="flex items-center gap-1 text-sm">
+                                        {isFeatureExpired(
+                                          feature.expires_at
+                                        ) && (
+                                          <AlertTriangle className="h-3 w-3 text-red-500" />
+                                        )}
+                                        {!isFeatureExpired(
+                                          feature.expires_at
+                                        ) &&
+                                          isFeatureExpiringSoon(
+                                            feature.expires_at
+                                          ) && (
+                                            <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                                          )}
+                                        <span className="text-muted-foreground">
+                                          Expires:{" "}
+                                          {new Date(
+                                            feature.expires_at
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {feature.enabled && !feature.expires_at && (
+                                      <p className="text-sm text-muted-foreground">
+                                        No expiration
+                                      </p>
+                                    )}
+                                  </div>
+                                )
+                              )}
                             </div>
                           </div>
                         </CollapsibleContent>
                       </Collapsible>
                     )}
                   </div>
-                )
+                );
               })}
-              
+
               {/* Pagination */}
               {!loading && licenses.length > 0 && (
                 <div className="flex items-center justify-between px-2 pt-4">
@@ -404,5 +489,5 @@ export default function LicensesPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

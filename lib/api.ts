@@ -310,6 +310,7 @@ export interface File {
   comment?: string
   url: string
   created: string
+  is_flashed: boolean
   logs?: Log[]
 }
 
