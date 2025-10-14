@@ -165,6 +165,15 @@ export async function putJson<T>(path: string, data: any): Promise<T> {
   return response.json()
 }
 
+// Helper function for PATCH requests with JSON body
+export async function patchJson<T>(path: string, data: any): Promise<T> {
+  const response = await api(path, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
 // Helper function for DELETE requests
 export async function deleteJson<T = void>(path: string): Promise<T> {
   const response = await api(path, {
@@ -229,25 +238,27 @@ export interface PaginatedResponse<T> {
 export interface Project {
   uuid: string
   title: string
-  status: "new" | "ongoing" | "finished"
+  status: "new" | "required_customer_action" | "required_dealer_action" | "completed" | "closed"
   created: string
   modified: string
   vehicle: string
   dealer: string
   customer: string
   unread_count: string
+  ecu_serials: string[]
+  ecus?: ECU[] // Only included in detail view
 }
 
 export interface Vehicle {
   vin: string
+  dealer?: string  // Username of the dealer
+  customer?: string  // Username of the customer
   series?: string
   fa_codes?: string[]
   egs_paid: boolean
   swap_paid: boolean
   egs_swap_paid: boolean
   is_test: boolean
-  dealer?: string
-  customer?: string
   created?: string
   projects?: Project[]
   ecus?: ECU[]
@@ -309,6 +320,12 @@ export interface Log {
   url: string
   created: string
   file_uuid?: string  // Added to support the new proxy endpoint
+}
+
+export interface Dealer {
+  uuid: string
+  username: string
+  company_name?: string
 }
 
 export interface Customer {

@@ -15,8 +15,18 @@ import type { Project } from "@/lib/api"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  ongoing: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  finished: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  required_customer_action: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  required_dealer_action: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  closed: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+}
+
+const statusLabels = {
+  new: "New",
+  required_customer_action: "Required Customer Action",
+  required_dealer_action: "Required Dealer Action",
+  completed: "Completed",
+  closed: "Closed",
 }
 
 export default function ProjectsPage() {
@@ -80,7 +90,7 @@ export default function ProjectsPage() {
       header: "Status",
       render: (status: string) => (
         <Badge variant="secondary" className={statusColors[status as keyof typeof statusColors]}>
-          {status}
+          {statusLabels[status as keyof typeof statusLabels] || status}
         </Badge>
       ),
     },
@@ -161,8 +171,10 @@ export default function ProjectsPage() {
                   <SelectContent>
                     <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="ongoing">Ongoing</SelectItem>
-                    <SelectItem value="finished">Finished</SelectItem>
+                    <SelectItem value="required_customer_action">Required Customer Action</SelectItem>
+                    <SelectItem value="required_dealer_action">Required Dealer Action</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
                   </SelectContent>
                 </Select>
               ),
