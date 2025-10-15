@@ -8,15 +8,17 @@ import { useEffect, useState } from "react";
 import { ChartVisualizer } from "@/components/chart-visualizer";
 import { EcuPanel } from "@/components/ecu-panel";
 import { EnhancedProjectHeader } from "@/components/enhanced-project-header";
-import { RedesignedMessageChat } from "@/components/redesigned-message-chat";
+import { ProjectMessages } from "@/components/project-messages";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
 import { getJson, type ECU, type Log, type Project } from "@/lib/api";
 
 export default function ProjectDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [ecus, setEcus] = useState<ECU[]>([]);
@@ -93,6 +95,12 @@ export default function ProjectDetailPage() {
     setChartLog(null);
   };
 
+  // Handle when messages are marked as read to refresh the projects list
+  const handleMessagesRead = () => {
+    // Refresh the router to update any cached data
+    router.refresh();
+  };
+
   if (loading) {
     return (
       <div className="p-4 md:p-6">
@@ -139,10 +147,8 @@ export default function ProjectDetailPage() {
         {/* Enhanced Project Header */}
         <EnhancedProjectHeader project={project} />
 
-        {/* Two-column layout: ECUs (2/3) + Messages (1/3) */}
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-          {/* ECUs Column - Takes 2/3 of space */}
-          <div className="lg:col-span-2">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-5">
+          <div className="lg:col-span-3">
             <EcuPanel
               ecus={ecus}
               selectedEcuSerial={selectedEcuSerial}
@@ -154,9 +160,12 @@ export default function ProjectDetailPage() {
             />
           </div>
 
-          {/* Messages Column - Takes 1/3 of space */}
-          <div className="lg:col-span-1">
-            <RedesignedMessageChat projectUuid={project.uuid} />
+          <div className="lg:col-span-2">
+            <ProjectMessages
+              projectId={project.uuid}
+              projectTitle={project.title}
+              onMessagesRead={handleMessagesRead}
+            />
           </div>
         </div>
       </div>

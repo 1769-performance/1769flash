@@ -1,79 +1,89 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CreateProjectDialog } from "@/components/create-project-dialog"
-import { EcuPanel } from "@/components/ecu-panel"
-import { ProjectsTable } from "@/components/projects-table"
-import { PaymentsTable } from "@/components/payments-table"
-import { LicensesTable } from "@/components/licenses-table"
-import { ChartVisualizer } from "@/components/chart-visualizer"
-import { ArrowLeft, Car, Cpu, FolderOpen, CreditCard, FileText } from "lucide-react"
-import Link from "next/link"
-import { getJson, type Vehicle, type Log } from "@/lib/api"
-import { useAuth } from "@/hooks/use-auth"
+import { ChartVisualizer } from "@/components/chart-visualizer";
+import { EcuPanel } from "@/components/ecu-panel";
+import { LicensesTable } from "@/components/licenses-table";
+import { PaymentsTable } from "@/components/payments-table";
+import { ProjectsTable } from "@/components/projects-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { getJson, type Log, type Vehicle } from "@/lib/api";
+import { ArrowLeft, Car, CreditCard, FileText, FolderOpen } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function VehicleDetailPage() {
-  const params = useParams()
-  const { user } = useAuth()
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedEcuSerial, setSelectedEcuSerial] = useState<string | null>(null)
-  
+  const params = useParams();
+  const { user } = useAuth();
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedEcuSerial, setSelectedEcuSerial] = useState<string | null>(
+    null
+  );
+
   // Chart visualization state
-  const [chartLog, setChartLog] = useState<Log | null>(null)
-  const [chartModalOpen, setChartModalOpen] = useState(false)
+  const [chartLog, setChartLog] = useState<Log | null>(null);
+  const [chartModalOpen, setChartModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchVehicle = async () => {
-      if (!params.vin) return
+      if (!params.vin) return;
 
       try {
-        setLoading(true)
-        const vehicleData = await getJson<Vehicle>(`/vehicles/${params.vin}/?expand=licenses,payments,projects`)
-        setVehicle(vehicleData)
+        setLoading(true);
+        const vehicleData = await getJson<Vehicle>(
+          `/vehicles/${params.vin}/?expand=licenses,payments,projects`
+        );
+        setVehicle(vehicleData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load vehicle")
+        setError(err instanceof Error ? err.message : "Failed to load vehicle");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchVehicle()
-  }, [params.vin])
+    fetchVehicle();
+  }, [params.vin]);
 
   const getPaidOptions = (vehicle: Vehicle): string[] => {
-    const options: string[] = []
-    if (vehicle.egs_paid) options.push("EGS")
-    if (vehicle.swap_paid) options.push("Swap")
-    if (vehicle.egs_swap_paid) options.push("EGS Swap")
-    return options
-  }
+    const options: string[] = [];
+    if (vehicle.egs_paid) options.push("EGS");
+    if (vehicle.swap_paid) options.push("Swap");
+    if (vehicle.egs_swap_paid) options.push("EGS Swap");
+    return options;
+  };
 
   const refetchVehicle = async () => {
-    if (!params.vin) return
+    if (!params.vin) return;
     try {
-      const vehicleData = await getJson<Vehicle>(`/vehicles/${params.vin}/?expand=licenses,payments,projects`)
-      setVehicle(vehicleData)
+      const vehicleData = await getJson<Vehicle>(
+        `/vehicles/${params.vin}/?expand=licenses,payments,projects`
+      );
+      setVehicle(vehicleData);
     } catch (err) {
-      console.error("Failed to refetch vehicle data:", err)
+      console.error("Failed to refetch vehicle data:", err);
     }
-  }
+  };
 
   const handleLogVisualize = (log: Log) => {
-    setChartLog(log)
-    setChartModalOpen(true)
-  }
+    setChartLog(log);
+    setChartModalOpen(true);
+  };
 
   const handleChartClose = () => {
-    setChartModalOpen(false)
-    setChartLog(null)
-  }
-
+    setChartModalOpen(false);
+    setChartLog(null);
+  };
 
   if (loading) {
     return (
@@ -84,7 +94,7 @@ export default function VehicleDetailPage() {
           <div className="h-64 bg-muted rounded" />
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !vehicle) {
@@ -92,14 +102,16 @@ export default function VehicleDetailPage() {
       <div className="p-4 md:p-6">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-destructive">Error: {error || "Vehicle not found"}</p>
+            <p className="text-destructive">
+              Error: {error || "Vehicle not found"}
+            </p>
             <Button asChild className="mt-4">
               <Link href="/vehicles">Back to Vehicles</Link>
             </Button>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -124,10 +136,9 @@ export default function VehicleDetailPage() {
                   <Car className="h-6 w-6 shrink-0" />
                   <span className="break-all">Vehicle</span>
                 </CardTitle>
-                <CardDescription>Vehicle details and management</CardDescription>
-              </div>
-              <div className="shrink-0">
-                <CreateProjectDialog vehicleVin={vehicle.vin} onProjectCreated={refetchVehicle} />
+                <CardDescription>
+                  Vehicle details and management
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -135,29 +146,35 @@ export default function VehicleDetailPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <p className="text-sm font-medium">VIN</p>
-                <p className="text-sm text-muted-foreground font-mono">{vehicle.vin}</p>
+                <p className="text-sm text-muted-foreground font-mono">
+                  {vehicle.vin}
+                </p>
               </div>
-              
+
               {/* Show dealer column only for customers */}
               {user?.profile_type === "customer" && vehicle.dealer && (
                 <div>
                   <p className="text-sm font-medium">Dealer</p>
-                  <p className="text-sm text-muted-foreground">{vehicle.dealer}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.dealer}
+                  </p>
                 </div>
               )}
-              
+
               {/* Show customer column only for dealers */}
               {user?.profile_type === "dealer" && vehicle.customer && (
                 <div>
                   <p className="text-sm font-medium">Customer</p>
-                  <p className="text-sm text-muted-foreground">{vehicle.customer}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.customer}
+                  </p>
                 </div>
               )}
-              
+
               <div>
                 <p className="text-sm font-medium">Paid Options</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {getPaidOptions(vehicle).map(option => (
+                  {getPaidOptions(vehicle).map((option) => (
                     <Badge key={option} variant="outline" className="text-xs">
                       {option}
                     </Badge>
@@ -167,7 +184,7 @@ export default function VehicleDetailPage() {
                   )}
                 </div>
               </div>
-              
+
               {vehicle.created && (
                 <div>
                   <p className="text-sm font-medium">Created</p>
@@ -176,15 +193,16 @@ export default function VehicleDetailPage() {
                   </p>
                 </div>
               )}
-              
-              
+
               {vehicle.series && (
                 <div>
                   <p className="text-sm font-medium">Series</p>
-                  <p className="text-sm text-muted-foreground">{vehicle.series}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.series}
+                  </p>
                 </div>
               )}
-              
+
               {vehicle.fa_codes && vehicle.fa_codes.length > 0 && (
                 <div className="col-span-2">
                   <p className="text-sm font-medium">FA Codes</p>
@@ -221,7 +239,9 @@ export default function VehicleDetailPage() {
                 <FolderOpen className="h-6 w-6" />
                 Projects ({vehicle.projects.length})
               </CardTitle>
-              <CardDescription>Projects associated with this vehicle</CardDescription>
+              <CardDescription>
+                Projects associated with this vehicle
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ProjectsTable
@@ -241,7 +261,9 @@ export default function VehicleDetailPage() {
                 <CreditCard className="h-6 w-6" />
                 Payments ({vehicle.payments.length})
               </CardTitle>
-              <CardDescription>Payment history for this vehicle</CardDescription>
+              <CardDescription>
+                Payment history for this vehicle
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <PaymentsTable payments={vehicle.payments} />
@@ -257,7 +279,9 @@ export default function VehicleDetailPage() {
                 <FileText className="h-6 w-6" />
                 Licenses ({vehicle.licenses.length})
               </CardTitle>
-              <CardDescription>License information for this vehicle</CardDescription>
+              <CardDescription>
+                License information for this vehicle
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <LicensesTable licenses={vehicle.licenses} />
@@ -273,5 +297,5 @@ export default function VehicleDetailPage() {
         onClose={handleChartClose}
       />
     </div>
-  )
+  );
 }
