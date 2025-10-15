@@ -128,23 +128,47 @@ export function usePushSubscription({
         "/push/subscriptions/vapid-public-key/"
       );
 
-      // The VAPID public key from backend is in DER-encoded X.509 format
-      // We need to extract the raw 65-byte P-256 public key
-      const base64Key = response.public_key;
+      console.log("Raw VAPID public key:", response.public_key);
 
-      // Decode the DER-encoded key
-      const derKeyBytes = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
+      // The backend now provides the raw public key in base64url format
+      // We just need to convert base64url to Uint8Array for the Push API
+      const base64urlKey = response.public_key;
 
-      // Extract the raw 65-byte public key (last 65 bytes of DER structure)
-      // DER format for P-256 public key: header + 0x04 + 32 bytes X + 32 bytes Y
-      const rawPublicKey = derKeyBytes.slice(-65); // Last 65 bytes
+      // Convert base64url to base64
+      let base64Key = base64urlKey
+        .replace(/-/g, '+')  // Replace URL-safe characters
+        .replace(/_/g, '/');   // Replace URL-safe characters
 
-      // Verify this is the correct format (uncompressed point)
-      if (rawPublicKey.length !== 65 || rawPublicKey[0] !== 0x04) {
-        throw new Error("Invalid VAPID public key format");
+      // Add padding back if needed
+      while (base64Key.length % 4) {
+        base64Key += '=';
       }
 
-      return rawPublicKey;
+      console.log("Converted to base64:", base64Key);
+
+      // Decode base64 to binary string
+      const binaryString = atob(base64Key);
+
+      // Convert to Uint8Array
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      console.log("VAPID public key length:", bytes.length);
+
+      // Verify this is the correct format (should be 65 bytes for uncompressed P-256)
+      if (bytes.length !== 65) {
+        throw new Error(`Invalid VAPID public key length: ${bytes.length}, expected 65`);
+      }
+
+      // Verify first byte is 0x04 (uncompressed point format)
+      if (bytes[0] !== 0x04) {
+        throw new Error(`Invalid VAPID public key format: first byte is 0x${bytes[0].toString(16)}, expected 0x04`);
+      }
+
+      console.log("Successfully decoded VAPID public key");
+      return bytes;
     } catch (err) {
       console.error("Failed to get VAPID public key:", err);
       throw new Error("VAPID keys not configured");

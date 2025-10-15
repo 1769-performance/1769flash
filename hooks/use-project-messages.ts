@@ -42,6 +42,7 @@ interface UseProjectMessagesReturn {
   isConnecting: boolean;
   error: Error | null;
   reconnect: () => void;
+  connectionMode: 'websocket' | 'polling';
 }
 
 export function useProjectMessages({
@@ -56,12 +57,15 @@ export function useProjectMessages({
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [connectionMode, setConnectionMode] = useState<'websocket' | 'polling'>('websocket');
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const shouldReconnectRef = useRef(true);
   const retryCountRef = useRef(0);
   const maxRetries = 10; // Maximum reconnection attempts
+  const lastMessageIdRef = useRef<string | null>(null); // Track last seen message for polling
 
   // Store callbacks in refs to avoid recreating connect function
   const onMessageRef = useRef(onMessage);
@@ -84,7 +88,22 @@ export function useProjectMessages({
 
     // Determine WebSocket URL based on environment
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsHost = process.env.NEXT_PUBLIC_WS_URL || "127.0.0.1:8001";
+
+    // In production, use the same host as the current page for WebSocket connection
+    // In development, use configurable WebSocket host
+    let wsHost: string;
+
+    if (process.env.NEXT_PUBLIC_WS_URL) {
+      // Custom WebSocket host configured (useful for development)
+      wsHost = process.env.NEXT_PUBLIC_WS_URL;
+    } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // Development environment
+      wsHost = '127.0.0.1:8002'; // Match development backend port
+    } else {
+      // Production environment - use same host as current page
+      wsHost = window.location.host;
+    }
+
     const wsUrl = `${protocol}//${wsHost}/ws/projects/${projectId}/messages/`;
 
     console.log("Connecting to WebSocket:", wsUrl);
@@ -168,8 +187,10 @@ export function useProjectMessages({
             connect();
           }, delay);
         } else if (retryCountRef.current >= maxRetries) {
-          console.error(`Max reconnection attempts (${maxRetries}) reached. Giving up.`);
-          setError(new Error("Failed to connect after multiple attempts. Please refresh the page."));
+          console.error(`Max WebSocket reconnection attempts (${maxRetries}) reached. Falling back to HTTP polling.`);
+          // Fall back to HTTP polling
+          startPolling();
+          setError(new Error("WebSocket unavailable. Using HTTP polling for messages."));
         }
       };
 
@@ -193,6 +214,11 @@ export function useProjectMessages({
       reconnectTimeoutRef.current = null;
     }
 
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -200,36 +226,126 @@ export function useProjectMessages({
 
     setIsConnected(false);
     setIsConnecting(false);
+    setConnectionMode('websocket');
+  }, []);
+
+  const startPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    setConnectionMode('polling');
+    setIsConnected(true);
+    setIsConnecting(false);
+    setError(null);
+    console.log("Started HTTP polling for messages");
+
+    // Poll every 3 seconds
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        const url = lastMessageIdRef.current
+          ? `/projects/${projectId}/messages/?after=${lastMessageIdRef.current}`
+          : `/projects/${projectId}/messages/`;
+
+        const response = await getJson<{ results?: Message[]; count?: number } | Message[]>(url);
+        const newMessages = Array.isArray(response) ? response : (response.results || []);
+
+        if (newMessages.length > 0) {
+          console.log(`Polling: found ${newMessages.length} new messages`);
+
+          // Update last message ID
+          lastMessageIdRef.current = newMessages[newMessages.length - 1].uuid;
+
+          // Add new messages
+          setMessages(prev => [...prev, ...newMessages]);
+
+          // Notify about new messages
+          newMessages.forEach(message => {
+            if (onMessageRef.current) {
+              onMessageRef.current(message);
+            }
+
+            // Show notifications for messages not from current user
+            if (message.sender_username !== currentUsername) {
+              showNotification(message);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+        // Don't set error state for polling errors, just log them
+      }
+    }, 3000);
+  }, [projectId, currentUsername]);
+
+  const stopPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setIsConnected(false);
+    setConnectionMode('websocket');
+    console.log("Stopped HTTP polling");
   }, []);
 
   const reconnect = useCallback(() => {
     disconnect();
     shouldReconnectRef.current = true;
     retryCountRef.current = 0; // Reset retry count for manual reconnect
+    setConnectionMode('websocket'); // Try WebSocket first
     connect();
   }, [connect, disconnect]);
 
   const sendMessage = useCallback(
-    (text: string) => {
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        console.error("WebSocket is not connected");
-        setError(new Error("Cannot send message: WebSocket not connected"));
-        return;
-      }
-
+    async (text: string) => {
       if (!text.trim()) {
         console.error("Cannot send empty message");
         return;
       }
 
+      // If WebSocket is available and connected, use it
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          wsRef.current.send(JSON.stringify({ text }));
+          return;
+        } catch (err) {
+          console.error("Failed to send WebSocket message:", err);
+          // Fall back to HTTP
+        }
+      }
+
+      // Fall back to HTTP POST for sending messages (polling mode)
       try {
-        wsRef.current.send(JSON.stringify({ text }));
+        console.log("Sending message via HTTP POST");
+        const response = await fetch(`/v1/projects/${projectId}/messages/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // Include credentials for authentication
+          },
+          credentials: 'include',
+          body: JSON.stringify({ text }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const message = await response.json();
+        console.log("Message sent successfully via HTTP");
+
+        // Add the message immediately to local state
+        setMessages(prev => [...prev, message]);
+
+        // Update last message ID for polling
+        lastMessageIdRef.current = message.uuid;
+
       } catch (err) {
-        console.error("Failed to send message:", err);
+        console.error("Failed to send message via HTTP:", err);
         setError(err as Error);
       }
     },
-    []
+    [projectId]
   );
 
   // Load existing messages on mount
@@ -242,6 +358,11 @@ export function useProjectMessages({
         // Handle both paginated response and plain array
         const messagesArray = Array.isArray(response) ? response : (response.results || []);
         setMessages(messagesArray);
+
+        // Set the last message ID for polling
+        if (messagesArray.length > 0) {
+          lastMessageIdRef.current = messagesArray[messagesArray.length - 1].uuid;
+        }
       } catch (err) {
         console.error("Failed to load existing messages:", err);
       }
@@ -282,6 +403,7 @@ export function useProjectMessages({
     isConnecting,
     error,
     reconnect,
+    connectionMode,
   };
 }
 
