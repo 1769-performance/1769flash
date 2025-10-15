@@ -154,8 +154,11 @@ export function usePushSubscription({
   // Get VAPID public key
   const getVapidPublicKey = useCallback(async (): Promise<Uint8Array> => {
     try {
+      // Add multiple cache-busting parameters to ensure fresh response
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(7);
       const response = await getJson<{ public_key: string }>(
-        `/push/subscriptions/vapid-public-key/?t=${Date.now()}`
+        `/push/subscriptions/vapid-public-key/?t=${timestamp}&r=${random}&cb=${timestamp}`
       );
 
       // The backend should return base64url-encoded VAPID key
@@ -163,8 +166,24 @@ export function usePushSubscription({
       console.log("Raw VAPID public key:", rawKey);
       console.log("Key length:", rawKey.length);
 
-      // Handle the key as base64url format (standard for Web Push API)
-      return handleBase64urlKey(rawKey);
+      // Detect format and handle appropriately
+      // Base64url (Web Push standard): shorter, no padding, contains - or _, usually 88 chars
+      // DER-encoded (fallback): longer, has padding ==, contains only +/ chars, usually 126+ chars
+      if (rawKey.length < 100 && !rawKey.includes('==') && (rawKey.includes('-') || rawKey.includes('_'))) {
+        console.log("Detected base64url format (Web Push standard)");
+        return handleBase64urlKey(rawKey);
+      } else if (rawKey.length > 100 && (rawKey.includes('==') || /^[A-Za-z0-9+/=]+$/.test(rawKey))) {
+        console.log("Detected DER-encoded format, extracting base64url key");
+        return handleDerEncodedKey(rawKey);
+      } else {
+        console.log("Unknown format, trying base64url first");
+        try {
+          return handleBase64urlKey(rawKey);
+        } catch (b64urlError) {
+          console.log("Base64url failed, trying DER format");
+          return handleDerEncodedKey(rawKey);
+        }
+      }
     } catch (err) {
       console.error("Failed to get VAPID public key:", err);
       throw new Error("VAPID keys not configured");
