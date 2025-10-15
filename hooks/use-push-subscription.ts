@@ -122,12 +122,36 @@ export function usePushSubscription({
   }, [swRegistration]);
 
   // Get VAPID public key
-  const getVapidPublicKey = useCallback(async (): Promise<string> => {
+  const getVapidPublicKey = useCallback(async (): Promise<Uint8Array> => {
     try {
       const response = await getJson<{ public_key: string }>(
         "/push/subscriptions/vapid-public-key/"
       );
-      return response.public_key;
+
+      // The response should already be in base64url format, but we need to convert it to Uint8Array
+      // Push API expects the raw bytes, not base64 string
+      let base64Key = response.public_key;
+
+      // Remove any padding if present
+      base64Key = base64Key.replace(/=/g, '');
+
+      // Convert base64url to standard base64 for atob()
+      base64Key = base64Key
+        .replace(/-/g, '+')  // Replace URL-safe characters
+        .replace(/_/g, '/');   // Replace URL-safe characters
+
+      // Add padding back if needed
+      while (base64Key.length % 4) {
+        base64Key += '=';
+      }
+
+      const binaryString = atob(base64Key);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      return bytes;
     } catch (err) {
       console.error("Failed to get VAPID public key:", err);
       throw new Error("VAPID keys not configured");
