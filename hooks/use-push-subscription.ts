@@ -128,30 +128,23 @@ export function usePushSubscription({
         "/push/subscriptions/vapid-public-key/"
       );
 
-      // The response should already be in base64url format, but we need to convert it to Uint8Array
-      // Push API expects the raw bytes, not base64 string
-      let base64Key = response.public_key;
+      // The VAPID public key from backend is in DER-encoded X.509 format
+      // We need to extract the raw 65-byte P-256 public key
+      const base64Key = response.public_key;
 
-      // Remove any padding if present
-      base64Key = base64Key.replace(/=/g, '');
+      // Decode the DER-encoded key
+      const derKeyBytes = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
 
-      // Convert base64url to standard base64 for atob()
-      base64Key = base64Key
-        .replace(/-/g, '+')  // Replace URL-safe characters
-        .replace(/_/g, '/');   // Replace URL-safe characters
+      // Extract the raw 65-byte public key (last 65 bytes of DER structure)
+      // DER format for P-256 public key: header + 0x04 + 32 bytes X + 32 bytes Y
+      const rawPublicKey = derKeyBytes.slice(-65); // Last 65 bytes
 
-      // Add padding back if needed
-      while (base64Key.length % 4) {
-        base64Key += '=';
+      // Verify this is the correct format (uncompressed point)
+      if (rawPublicKey.length !== 65 || rawPublicKey[0] !== 0x04) {
+        throw new Error("Invalid VAPID public key format");
       }
 
-      const binaryString = atob(base64Key);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      return bytes;
+      return rawPublicKey;
     } catch (err) {
       console.error("Failed to get VAPID public key:", err);
       throw new Error("VAPID keys not configured");
