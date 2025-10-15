@@ -98,7 +98,7 @@ export function useProjectMessages({
       wsHost = process.env.NEXT_PUBLIC_WS_URL;
     } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       // Development environment
-      wsHost = '127.0.0.1:8002'; // Match development backend port
+      wsHost = '127.0.0.1:8001'; // Match development backend port
     } else {
       // Production environment - use same host as current page
       wsHost = window.location.host;

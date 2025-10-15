@@ -11,6 +11,36 @@
 import { getJson, postJson } from "@/lib/api";
 import { useCallback, useEffect, useState } from "react";
 
+/**
+ * Proper base64 decoding that handles UTF-8 correctly
+ */
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * Convert base64url string to Uint8Array
+ * This handles URL-safe base64 encoding without padding
+ */
+function base64urlToUint8Array(base64url: string): Uint8Array {
+  // Convert base64url to base64
+  let base64 = base64url
+    .replace(/-/g, '+')  // Replace URL-safe characters
+    .replace(/_/g, '/');   // Replace URL-safe characters
+
+  // Add padding back if needed
+  while (base64.length % 4) {
+    base64 += '=';
+  }
+
+  return base64ToUint8Array(base64);
+}
+
 interface PushSubscription {
   uuid: string;
   endpoint: string;
@@ -125,37 +155,31 @@ export function usePushSubscription({
   const getVapidPublicKey = useCallback(async (): Promise<Uint8Array> => {
     try {
       const response = await getJson<{ public_key: string }>(
-        "/push/subscriptions/vapid-public-key/"
+        `/push/subscriptions/vapid-public-key/?t=${Date.now()}`
       );
 
-      console.log("Raw VAPID public key:", response.public_key);
+      // The backend should return base64url-encoded VAPID key
+      const rawKey = response.public_key;
+      console.log("Raw VAPID public key:", rawKey);
+      console.log("Key length:", rawKey.length);
 
-      // The backend now provides the raw public key in base64url format
-      // We just need to convert base64url to Uint8Array for the Push API
-      const base64urlKey = response.public_key;
+      // Handle the key as base64url format (standard for Web Push API)
+      return handleBase64urlKey(rawKey);
+    } catch (err) {
+      console.error("Failed to get VAPID public key:", err);
+      throw new Error("VAPID keys not configured");
+    }
+  }, []);
 
-      // Convert base64url to base64
-      let base64Key = base64urlKey
-        .replace(/-/g, '+')  // Replace URL-safe characters
-        .replace(/_/g, '/');   // Replace URL-safe characters
+  // Handle base64url-encoded VAPID key (preferred format)
+  const handleBase64urlKey = (base64urlKey: string): Uint8Array => {
+    console.log("Processing base64url key:", base64urlKey);
 
-      // Add padding back if needed
-      while (base64Key.length % 4) {
-        base64Key += '=';
-      }
+    try {
+      // Use proper base64url decoding that handles UTF-8 correctly
+      const bytes = base64urlToUint8Array(base64urlKey);
 
-      console.log("Converted to base64:", base64Key);
-
-      // Decode base64 to binary string
-      const binaryString = atob(base64Key);
-
-      // Convert to Uint8Array
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      console.log("VAPID public key length:", bytes.length);
+      console.log("Decoded key length:", bytes.length);
 
       // Verify this is the correct format (should be 65 bytes for uncompressed P-256)
       if (bytes.length !== 65) {
@@ -167,13 +191,53 @@ export function usePushSubscription({
         throw new Error(`Invalid VAPID public key format: first byte is 0x${bytes[0].toString(16)}, expected 0x04`);
       }
 
-      console.log("Successfully decoded VAPID public key");
+      console.log("Successfully decoded base64url VAPID key");
       return bytes;
     } catch (err) {
-      console.error("Failed to get VAPID public key:", err);
-      throw new Error("VAPID keys not configured");
+      console.error("Failed to decode base64url key:", err);
+      throw new Error(`Failed to decode base64url VAPID key: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
-  }, []);
+  };
+
+  // Handle DER-encoded X.256 public key (fallback format)
+  const handleDerEncodedKey = (derKey: string): Uint8Array => {
+    console.log("Processing DER-encoded key:", derKey);
+
+    try {
+      // Clean the base64 string
+      const cleanBase64Key = derKey.replace(/[^A-Za-z0-9+/=]/g, '');
+
+      // Add padding if needed
+      const paddingNeeded = (4 - (cleanBase64Key.length % 4)) % 4;
+      const paddedBase64Key = cleanBase64Key + '='.repeat(paddingNeeded);
+
+      console.log("Cleaned and padded base64:", paddedBase64Key);
+
+      // Use proper base64 decoding
+      const derKeyBytes = base64ToUint8Array(paddedBase64Key);
+
+      console.log("DER key length:", derKeyBytes.length);
+
+      // Extract the raw 65-byte public key (last 65 bytes)
+      if (derKeyBytes.length < 65) {
+        throw new Error(`DER key too short: ${derKeyBytes.length} bytes, expected at least 65`);
+      }
+
+      const rawPublicKey = derKeyBytes.slice(-65);
+      console.log("Extracted raw key length:", rawPublicKey.length);
+
+      // Verify this is the correct format (uncompressed point)
+      if (rawPublicKey.length !== 65 || rawPublicKey[0] !== 0x04) {
+        throw new Error(`Invalid VAPID public key format: length=${rawPublicKey.length}, first_byte=${rawPublicKey[0]?.toString(16)}`);
+      }
+
+      console.log("Successfully extracted VAPID key from DER format");
+      return rawPublicKey;
+    } catch (err) {
+      console.error("Failed to decode DER key:", err);
+      throw new Error(`Failed to decode DER VAPID key: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
 
   // Subscribe to push notifications
   const subscribe = useCallback(async () => {
@@ -254,7 +318,7 @@ export function usePushSubscription({
     try {
       // Delete subscription from server using our API client
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/push/subscriptions/${subscription.uuid}/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/push/subscriptions/${subscription.uuid}/`,
         {
           method: "DELETE",
           credentials: "include",
