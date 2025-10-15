@@ -425,7 +425,6 @@ function showNotification(message: Message) {
       requireInteraction: false,
       icon: "/logo.png",
       badge: "/badge.png",
-      sound: "/notification.mp3", // Try to use custom sound (browser support varies)
       silent: false, // Ensure sound is not muted
     });
 
@@ -462,10 +461,12 @@ export function initializeNotificationAudio() {
 
     // Play and immediately pause to "prime" the audio for autoplay
     notificationAudio.play().then(() => {
-      notificationAudio.pause();
-      notificationAudio.currentTime = 0;
-      audioInitialized = true;
-      console.log('Notification audio initialized successfully');
+      if (notificationAudio) {
+        notificationAudio.pause();
+        notificationAudio.currentTime = 0;
+        audioInitialized = true;
+        console.log('Notification audio initialized successfully');
+      }
     }).catch(err => {
       console.log('Audio initialization failed, will use fallback:', err);
     });
