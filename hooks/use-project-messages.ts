@@ -24,6 +24,10 @@ interface WebSocketMessage {
   messages?: Message[]; // For message.history event
   project_uuid?: string;
   error?: string;
+  dealer_unread?: number;
+  customer_unread?: number;
+  sender_id?: number;
+  sender_username?: string;
 }
 
 interface UseProjectMessagesOptions {
@@ -209,6 +213,21 @@ export function useProjectMessages({
                 console.warn(
                   `[WebSocket] ${timestamp} ⚠️ message.new has no message data`
                 );
+              }
+              break;
+
+            case "unread_count.update":
+              // Dispatch unread count update event
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('unreadCountUpdate', {
+                  detail: {
+                    project_uuid: data.project_uuid,
+                    dealer_unread: data.dealer_unread,
+                    customer_unread: data.customer_unread,
+                    sender_id: data.sender_id,
+                    sender_username: data.sender_username,
+                  }
+                }));
               }
               break;
 

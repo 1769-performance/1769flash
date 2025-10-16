@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaginatedList } from "@/hooks/use-paginated-list";
+import { UnreadCountProvider, useUnreadCounts } from "@/hooks/use-unread-counts";
 import type { Project } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -43,9 +44,10 @@ const statusLabels = {
   closed: "Closed",
 };
 
-export default function ProjectsPage() {
+function ProjectsPageContent() {
   const router = useRouter();
   const { user } = useAuth();
+  const { refreshAllCounts, unreadCounts } = useUnreadCounts();
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -92,6 +94,32 @@ export default function ProjectsPage() {
       ordering: ordering,
     });
   };
+
+  
+  // Refresh unread counts periodically and when page becomes visible
+  useEffect(() => {
+    // Initial refresh
+    refreshAllCounts();
+
+    // Set up periodic refresh
+    const interval = setInterval(() => {
+      refreshAllCounts();
+    }, 60000); // Refresh every minute
+
+    // Refresh when page becomes visible (user switches back to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAllCounts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshAllCounts]);
 
   // Dynamic columns based on user role
   const columns = [
@@ -141,12 +169,18 @@ export default function ProjectsPage() {
     {
       key: "unread_count" as keyof Project,
       header: "Unread",
-      render: (count: string) =>
-        count && count !== "0" ? (
+      render: (_, project: Project) => {
+        // Use real-time unread count from context, fallback to API data
+        const realTimeCount = unreadCounts[project.uuid];
+        const apiCount = project.unread_count ? parseInt(project.unread_count) : 0;
+        const count = realTimeCount !== undefined ? realTimeCount : apiCount;
+
+        return count > 0 ? (
           <Badge variant="destructive">{count}</Badge>
         ) : (
           <span className="text-muted-foreground">—</span>
-        ),
+        );
+      },
     },
     {
       key: "modified" as keyof Project,
@@ -172,9 +206,11 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold">Projects</h1>
           <p className="text-muted-foreground">Manage your tuning requests</p>
         </div>
-        {user?.profile_type === "customer" && (
-          <NewProjectDialog onProjectCreated={refetch} />
-        )}
+        <div className="flex items-center gap-2">
+          {user?.profile_type === "customer" && (
+            <NewProjectDialog onProjectCreated={refetch} />
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -271,5 +307,19 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ProjectsPage() {
+  const { user } = useAuth();
+
+  return (
+    <UnreadCountProvider
+      currentUserId={user?.user?.id}
+      profileUuid={user?.profile?.uuid}
+      username={user?.user?.username}
+    >
+      <ProjectsPageContent />
+    </UnreadCountProvider>
   );
 }

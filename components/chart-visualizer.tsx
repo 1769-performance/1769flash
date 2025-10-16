@@ -447,7 +447,10 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-hidden">
+    <div
+      id="chart-visualizer"
+      className="fixed inset-0 z-50 bg-background overflow-hidden"
+    >
       <div className="flex flex-col h-screen overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30 flex-shrink-0">
