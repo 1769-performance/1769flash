@@ -15,7 +15,6 @@ interface MessageData {
   uuid: string;
   text: string;
   created: string;
-  sender_name: string;
   sender_username: string;
 }
 

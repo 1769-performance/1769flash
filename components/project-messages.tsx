@@ -269,7 +269,7 @@ export function ProjectMessages({
                         {!isSystem && (
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-sm">
-                              {msg.sender_name || msg.sender_username}
+                              {msg.sender_username}
                             </span>
                             <span
                               className={cn(

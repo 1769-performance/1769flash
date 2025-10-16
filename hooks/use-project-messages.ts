@@ -8,14 +8,13 @@
  * - Connection state management
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
 import { getJson } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface Message {
   uuid: string;
   text: string;
   created: string;
-  sender_name: string;
   sender_username: string;
 }
 
@@ -42,7 +41,7 @@ interface UseProjectMessagesReturn {
   isConnecting: boolean;
   error: Error | null;
   reconnect: () => void;
-  connectionMode: 'websocket' | 'polling';
+  connectionMode: "websocket" | "polling";
 }
 
 export function useProjectMessages({
@@ -57,7 +56,9 @@ export function useProjectMessages({
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [connectionMode, setConnectionMode] = useState<'websocket' | 'polling'>('websocket');
+  const [connectionMode, setConnectionMode] = useState<"websocket" | "polling">(
+    "websocket"
+  );
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -96,9 +97,12 @@ export function useProjectMessages({
     if (process.env.NEXT_PUBLIC_WS_URL) {
       // Custom WebSocket host configured (useful for development)
       wsHost = process.env.NEXT_PUBLIC_WS_URL;
-    } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    } else if (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+    ) {
       // Development environment
-      wsHost = '127.0.0.1:8001'; // Match development backend port
+      wsHost = "127.0.0.1:8001"; // Match development backend port
     } else {
       // Production environment - use same host as current page
       wsHost = window.location.host;
@@ -179,18 +183,28 @@ export function useProjectMessages({
         wsRef.current = null;
 
         // Auto-reconnect if enabled and under retry limit
-        if (shouldReconnectRef.current && autoReconnect && retryCountRef.current < maxRetries) {
+        if (
+          shouldReconnectRef.current &&
+          autoReconnect &&
+          retryCountRef.current < maxRetries
+        ) {
           retryCountRef.current += 1;
           const delay = Math.min(reconnectDelay * retryCountRef.current, 30000); // Exponential backoff, max 30s
-          console.log(`Reconnecting in ${delay}ms... (attempt ${retryCountRef.current}/${maxRetries})`);
+          console.log(
+            `Reconnecting in ${delay}ms... (attempt ${retryCountRef.current}/${maxRetries})`
+          );
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, delay);
         } else if (retryCountRef.current >= maxRetries) {
-          console.error(`Max WebSocket reconnection attempts (${maxRetries}) reached. Falling back to HTTP polling.`);
+          console.error(
+            `Max WebSocket reconnection attempts (${maxRetries}) reached. Falling back to HTTP polling.`
+          );
           // Fall back to HTTP polling
           startPolling();
-          setError(new Error("WebSocket unavailable. Using HTTP polling for messages."));
+          setError(
+            new Error("WebSocket unavailable. Using HTTP polling for messages.")
+          );
         }
       };
 
@@ -226,7 +240,7 @@ export function useProjectMessages({
 
     setIsConnected(false);
     setIsConnecting(false);
-    setConnectionMode('websocket');
+    setConnectionMode("websocket");
   }, []);
 
   const startPolling = useCallback(() => {
@@ -234,7 +248,7 @@ export function useProjectMessages({
       clearInterval(pollingIntervalRef.current);
     }
 
-    setConnectionMode('polling');
+    setConnectionMode("polling");
     setIsConnected(true);
     setIsConnecting(false);
     setError(null);
@@ -247,8 +261,12 @@ export function useProjectMessages({
           ? `/projects/${projectId}/messages/?after=${lastMessageIdRef.current}`
           : `/projects/${projectId}/messages/`;
 
-        const response = await getJson<{ results?: Message[]; count?: number } | Message[]>(url);
-        const newMessages = Array.isArray(response) ? response : (response.results || []);
+        const response = await getJson<
+          { results?: Message[]; count?: number } | Message[]
+        >(url);
+        const newMessages = Array.isArray(response)
+          ? response
+          : response.results || [];
 
         if (newMessages.length > 0) {
           console.log(`Polling: found ${newMessages.length} new messages`);
@@ -257,10 +275,10 @@ export function useProjectMessages({
           lastMessageIdRef.current = newMessages[newMessages.length - 1].uuid;
 
           // Add new messages
-          setMessages(prev => [...prev, ...newMessages]);
+          setMessages((prev) => [...prev, ...newMessages]);
 
           // Notify about new messages
-          newMessages.forEach(message => {
+          newMessages.forEach((message) => {
             if (onMessageRef.current) {
               onMessageRef.current(message);
             }
@@ -284,7 +302,7 @@ export function useProjectMessages({
       pollingIntervalRef.current = null;
     }
     setIsConnected(false);
-    setConnectionMode('websocket');
+    setConnectionMode("websocket");
     console.log("Stopped HTTP polling");
   }, []);
 
@@ -292,7 +310,7 @@ export function useProjectMessages({
     disconnect();
     shouldReconnectRef.current = true;
     retryCountRef.current = 0; // Reset retry count for manual reconnect
-    setConnectionMode('websocket'); // Try WebSocket first
+    setConnectionMode("websocket"); // Try WebSocket first
     connect();
   }, [connect, disconnect]);
 
@@ -318,12 +336,12 @@ export function useProjectMessages({
       try {
         console.log("Sending message via HTTP POST");
         const response = await fetch(`/v1/projects/${projectId}/messages/`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             // Include credentials for authentication
           },
-          credentials: 'include',
+          credentials: "include",
           body: JSON.stringify({ text }),
         });
 
@@ -335,11 +353,10 @@ export function useProjectMessages({
         console.log("Message sent successfully via HTTP");
 
         // Add the message immediately to local state
-        setMessages(prev => [...prev, message]);
+        setMessages((prev) => [...prev, message]);
 
         // Update last message ID for polling
         lastMessageIdRef.current = message.uuid;
-
       } catch (err) {
         console.error("Failed to send message via HTTP:", err);
         setError(err as Error);
@@ -352,16 +369,19 @@ export function useProjectMessages({
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        const response = await getJson<{ results?: Message[]; count?: number } | Message[]>(
-          `/projects/${projectId}/messages/`
-        );
+        const response = await getJson<
+          { results?: Message[]; count?: number } | Message[]
+        >(`/projects/${projectId}/messages/`);
         // Handle both paginated response and plain array
-        const messagesArray = Array.isArray(response) ? response : (response.results || []);
+        const messagesArray = Array.isArray(response)
+          ? response
+          : response.results || [];
         setMessages(messagesArray);
 
         // Set the last message ID for polling
         if (messagesArray.length > 0) {
-          lastMessageIdRef.current = messagesArray[messagesArray.length - 1].uuid;
+          lastMessageIdRef.current =
+            messagesArray[messagesArray.length - 1].uuid;
         }
       } catch (err) {
         console.error("Failed to load existing messages:", err);
@@ -419,14 +439,19 @@ function showNotification(message: Message) {
 
   // Check permission
   if (Notification.permission === "granted") {
-    const notification = new Notification(`New message from ${message.sender_name || message.sender_username}`, {
-      body: message.text.substring(0, 100) + (message.text.length > 100 ? "..." : ""),
-      tag: `message-${message.uuid}`, // Prevents duplicate notifications
-      requireInteraction: false,
-      icon: "/logo.png",
-      badge: "/badge.png",
-      silent: false, // Ensure sound is not muted
-    });
+    const notification = new Notification(
+      `New message from ${message.sender_username}`,
+      {
+        body:
+          message.text.substring(0, 100) +
+          (message.text.length > 100 ? "..." : ""),
+        tag: `message-${message.uuid}`, // Prevents duplicate notifications
+        requireInteraction: false,
+        icon: "/logo.png",
+        badge: "/badge.png",
+        silent: false, // Ensure sound is not muted
+      }
+    );
 
     // Play system sound (most browsers will play default notification sound)
     playNotificationSound();
@@ -455,23 +480,26 @@ export function initializeNotificationAudio() {
   if (audioInitialized) return;
 
   try {
-    notificationAudio = new Audio('/notification.mp3');
+    notificationAudio = new Audio("/notification.mp3");
     notificationAudio.volume = 0.5;
-    notificationAudio.preload = 'auto';
+    notificationAudio.preload = "auto";
 
     // Play and immediately pause to "prime" the audio for autoplay
-    notificationAudio.play().then(() => {
-      if (notificationAudio) {
-        notificationAudio.pause();
-        notificationAudio.currentTime = 0;
-        audioInitialized = true;
-        console.log('Notification audio initialized successfully');
-      }
-    }).catch(err => {
-      console.log('Audio initialization failed, will use fallback:', err);
-    });
+    notificationAudio
+      .play()
+      .then(() => {
+        if (notificationAudio) {
+          notificationAudio.pause();
+          notificationAudio.currentTime = 0;
+          audioInitialized = true;
+          console.log("Notification audio initialized successfully");
+        }
+      })
+      .catch((err) => {
+        console.log("Audio initialization failed, will use fallback:", err);
+      });
   } catch (err) {
-    console.log('Audio initialization error:', err);
+    console.log("Audio initialization error:", err);
   }
 }
 
@@ -497,25 +525,25 @@ function playNotificationSound() {
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            console.log('Notification sound played successfully');
+            console.log("Notification sound played successfully");
           })
-          .catch(err => {
-            console.log('Notification sound play failed:', err);
+          .catch((err) => {
+            console.log("Notification sound play failed:", err);
             // Fall back to system notification sound if custom sound fails
             playSystemNotificationSound();
           });
       }
     } else {
       // Fallback: create new audio element
-      const audio = new Audio('/notification.mp3');
+      const audio = new Audio("/notification.mp3");
       audio.volume = 0.5;
-      audio.play().catch(err => {
-        console.log('Fallback audio play failed:', err);
+      audio.play().catch((err) => {
+        console.log("Fallback audio play failed:", err);
         playSystemNotificationSound();
       });
     }
   } catch (err) {
-    console.log('Notification sound error:', err);
+    console.log("Notification sound error:", err);
     // Fall back to system notification sound
     playSystemNotificationSound();
   }
@@ -527,7 +555,8 @@ function playNotificationSound() {
  */
 function playSystemNotificationSound() {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (window.AudioContext ||
+      (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
@@ -535,17 +564,20 @@ function playSystemNotificationSound() {
     gainNode.connect(audioContext.destination);
 
     oscillator.frequency.value = 800; // Hz
-    oscillator.type = 'sine';
+    oscillator.type = "sine";
 
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      audioContext.currentTime + 0.5
+    );
 
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.5);
 
-    console.log('Fallback system notification sound played');
+    console.log("Fallback system notification sound played");
   } catch (err) {
-    console.log('Fallback notification sound also failed:', err);
+    console.log("Fallback notification sound also failed:", err);
   }
 }
 
