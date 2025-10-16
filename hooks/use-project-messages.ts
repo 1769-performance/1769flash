@@ -21,6 +21,7 @@ export interface Message {
 interface WebSocketMessage {
   type: string;
   message?: Message;
+  messages?: Message[]; // For message.history event
   project_uuid?: string;
   error?: string;
 }
@@ -67,6 +68,7 @@ export function useProjectMessages({
   const retryCountRef = useRef(0);
   const maxRetries = 10; // Maximum reconnection attempts
   const lastMessageIdRef = useRef<string | null>(null); // Track last seen message for polling
+  const historyReceivedRef = useRef(false); // Track if we've received history from WebSocket
 
   // Store callbacks in refs to avoid recreating connect function
   const onMessageRef = useRef(onMessage);
@@ -124,18 +126,71 @@ export function useProjectMessages({
       };
 
       ws.onmessage = (event) => {
+        const timestamp = new Date().toISOString();
         try {
           const data: WebSocketMessage = JSON.parse(event.data);
+          console.log(`[WebSocket] ${timestamp} Event received:`, {
+            type: data.type,
+            dataKeys: Object.keys(data),
+          });
 
           switch (data.type) {
             case "connection.established":
-              console.log("Connection established:", data.project_uuid);
+              console.log(
+                `[WebSocket] ${timestamp} ✅ Connection established for project:`,
+                data.project_uuid
+              );
+              break;
+
+            case "message.history":
+              // Load historical messages when first connecting
+              console.log(`[WebSocket] ${timestamp} 📚 message.history event:`, {
+                hasMessages: !!data.messages,
+                isArray: Array.isArray(data.messages),
+                messageCount: data.messages?.length || 0,
+                messages: data.messages,
+              });
+
+              if (data.messages && Array.isArray(data.messages)) {
+                console.log(
+                  `[WebSocket] ${timestamp} ✅ Loading ${data.messages.length} historical messages`
+                );
+                setMessages(data.messages);
+                historyReceivedRef.current = true;
+
+                // Log first message for verification
+                if (data.messages.length > 0) {
+                  console.log(
+                    `[WebSocket] ${timestamp} First message:`,
+                    data.messages[0]
+                  );
+                  lastMessageIdRef.current =
+                    data.messages[data.messages.length - 1].uuid;
+                }
+              } else {
+                console.warn(
+                  `[WebSocket] ${timestamp} ⚠️ message.history has no valid messages array`
+                );
+              }
               break;
 
             case "message.new":
               if (data.message) {
-                console.log("New message received:", data.message);
-                setMessages((prev) => [...prev, data.message!]);
+                console.log(
+                  `[WebSocket] ${timestamp} 📨 New message received:`,
+                  {
+                    uuid: data.message.uuid,
+                    text: data.message.text.substring(0, 50),
+                    sender: data.message.sender_username,
+                    created: data.message.created,
+                  }
+                );
+                setMessages((prev) => {
+                  console.log(
+                    `[WebSocket] ${timestamp} Current message count: ${prev.length}, adding 1`
+                  );
+                  return [...prev, data.message!];
+                });
 
                 // Call callback if provided
                 if (onMessageRef.current) {
@@ -146,19 +201,31 @@ export function useProjectMessages({
                 if (data.message.sender_username !== currentUsername) {
                   showNotification(data.message);
                 }
+              } else {
+                console.warn(
+                  `[WebSocket] ${timestamp} ⚠️ message.new has no message data`
+                );
               }
               break;
 
             case "error":
-              console.error("WebSocket error:", data.error);
+              console.error(`[WebSocket] ${timestamp} ❌ Error:`, data.error);
               setError(new Error(data.error || "Unknown WebSocket error"));
               break;
 
             default:
-              console.warn("Unknown message type:", data.type);
+              console.warn(
+                `[WebSocket] ${timestamp} ⚠️ Unknown message type:`,
+                data.type
+              );
           }
         } catch (err) {
-          console.error("Failed to parse WebSocket message:", err);
+          console.error(
+            `[WebSocket] ${timestamp} ❌ Failed to parse message:`,
+            err,
+            "Raw data:",
+            event.data
+          );
         }
       };
 
@@ -365,26 +432,88 @@ export function useProjectMessages({
     [projectId]
   );
 
-  // Load existing messages on mount
+  // Load existing messages via REST API (only as fallback if WebSocket hasn't loaded them)
   useEffect(() => {
     const loadMessages = async () => {
-      try {
-        const response = await getJson<
-          { results?: Message[]; count?: number } | Message[]
-        >(`/projects/${projectId}/messages/`);
-        // Handle both paginated response and plain array
-        const messagesArray = Array.isArray(response)
-          ? response
-          : response.results || [];
-        setMessages(messagesArray);
+      const startTime = Date.now();
+      console.log(
+        `[REST Fallback] Starting 1.5s wait to see if WebSocket sends history...`
+      );
 
-        // Set the last message ID for polling
-        if (messagesArray.length > 0) {
-          lastMessageIdRef.current =
-            messagesArray[messagesArray.length - 1].uuid;
+      // Wait a bit to see if WebSocket sends history first
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const elapsed = Date.now() - startTime;
+      console.log(`[REST Fallback] ${elapsed}ms elapsed. Checking if history was received...`, {
+        historyReceived: historyReceivedRef.current,
+        currentMessageCount: messages.length,
+      });
+
+      // Only load from REST if we haven't received history from WebSocket
+      if (!historyReceivedRef.current) {
+        try {
+          console.log(
+            `[REST Fallback] ⚠️ WebSocket didn't send history, loading ALL messages via REST API (with pagination)`
+          );
+
+          // Load all pages of messages
+          let allMessages: Message[] = [];
+          let nextUrl: string | null = `/projects/${projectId}/messages/?limit=100`; // Use larger page size
+          let pageCount = 0;
+
+          while (nextUrl) {
+            pageCount++;
+            console.log(`[REST Fallback] Fetching page ${pageCount}: ${nextUrl}`);
+
+            const response = await getJson<{
+              results: Message[];
+              next: string | null;
+              count: number;
+            }>(nextUrl);
+
+            const pageMessages = response.results || [];
+            allMessages = [...allMessages, ...pageMessages];
+
+            console.log(
+              `[REST Fallback] Page ${pageCount}: got ${pageMessages.length} messages, total so far: ${allMessages.length}`
+            );
+
+            // Get next page URL (remove base URL if present, keep only the path)
+            if (response.next) {
+              try {
+                const nextUrlObj = new URL(response.next);
+                nextUrl = nextUrlObj.pathname + nextUrlObj.search;
+              } catch {
+                // If it's already a relative URL, use it as-is
+                nextUrl = response.next;
+              }
+            } else {
+              nextUrl = null;
+            }
+          }
+
+          console.log(
+            `[REST Fallback] ✅ Loaded ALL messages: ${allMessages.length} messages across ${pageCount} pages`
+          );
+          if (allMessages.length > 0) {
+            console.log(`[REST Fallback] First message:`, allMessages[0]);
+            console.log(`[REST Fallback] Last message:`, allMessages[allMessages.length - 1]);
+          }
+
+          setMessages(allMessages);
+
+          // Set the last message ID for polling
+          if (allMessages.length > 0) {
+            lastMessageIdRef.current =
+              allMessages[allMessages.length - 1].uuid;
+          }
+        } catch (err) {
+          console.error(`[REST Fallback] ❌ Failed to load messages:`, err);
         }
-      } catch (err) {
-        console.error("Failed to load existing messages:", err);
+      } else {
+        console.log(
+          `[REST Fallback] ✅ Messages already loaded via WebSocket (${messages.length} messages), skipping REST API call`
+        );
       }
     };
 
@@ -393,16 +522,30 @@ export function useProjectMessages({
 
   // Connect on mount
   useEffect(() => {
+    console.log(
+      `[WebSocket] Initializing WebSocket connection for project ${projectId}`
+    );
+
+    // Reset history flag when projectId changes
+    historyReceivedRef.current = false;
+    console.log(`[WebSocket] Reset historyReceivedRef to false`);
+
     // Set flag to allow reconnection
     shouldReconnectRef.current = true;
 
     // Only connect if not already connected
     if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+      console.log(`[WebSocket] Starting connection...`);
       connect();
+    } else {
+      console.log(
+        `[WebSocket] Already connected, state: ${wsRef.current.readyState}`
+      );
     }
 
     // Cleanup on unmount only (not on re-renders)
     return () => {
+      console.log(`[WebSocket] Cleaning up connection for project ${projectId}`);
       shouldReconnectRef.current = false;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
