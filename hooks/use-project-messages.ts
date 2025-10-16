@@ -642,7 +642,7 @@ export function initializeNotificationAudio() {
   if (audioInitialized) return;
 
   try {
-    notificationAudio = new Audio("/notification.mp3");
+    notificationAudio = new Audio("/notification_sound.mp3");
     notificationAudio.volume = 0.5;
     notificationAudio.preload = "auto";
 
@@ -667,7 +667,7 @@ export function initializeNotificationAudio() {
 
 /**
  * Play notification sound
- * Uses the notification.mp3 file from public folder, similar to how notification_icon.png is used
+ * Uses the notification_sound.mp3 file from public folder, similar to how notification_icon.png is used
  */
 function playNotificationSound() {
   // Initialize audio if not already done
@@ -697,7 +697,7 @@ function playNotificationSound() {
       }
     } else {
       // Fallback: create new audio element
-      const audio = new Audio("/notification.mp3");
+      const audio = new Audio("/notification_sound.mp3");
       audio.volume = 0.5;
       audio.play().catch((err) => {
         console.log("Fallback audio play failed:", err);
