@@ -60,11 +60,14 @@ export function NotificationPermission() {
       dismissed
     });
 
-    // Show banner if notifications are supported, not subscribed, and not dismissed
+    // Show banner if notifications are supported, not subscribed, not dismissed, and permission is not denied
     const isDismissed = localStorage.getItem("notification-banner-dismissed") === "true";
     setDismissed(isDismissed);
 
-    if (isSupported && !isSubscribed && !isDismissed && canSubscribe) {
+    // Show banner if: supported, not subscribed, not dismissed, and permission is granted or default
+    const canShowBanner = isSupported && !isSubscribed && !isDismissed && permission !== "denied";
+
+    if (canShowBanner) {
       console.log('Showing banner - all conditions met');
       setShowBanner(true);
     } else {
@@ -72,10 +75,14 @@ export function NotificationPermission() {
         isSupported,
         isSubscribed,
         isDismissed,
-        canSubscribe
+        permission
       });
+      // Don't hide banner if it was manually shown (e.g., after unsubscribe)
+      if (!canShowBanner && isDismissed) {
+        setShowBanner(false);
+      }
     }
-  }, [isSupported, isSubscribed, canSubscribe, dismissed]);
+  }, [isSupported, isSubscribed, permission, dismissed]);
 
   const handleSubscribe = async () => {
     try {
@@ -95,6 +102,14 @@ export function NotificationPermission() {
   const handleUnsubscribe = async () => {
     try {
       await unsubscribe();
+      // After unsubscribe, reset dismissal state and show enable banner
+      localStorage.removeItem("notification-banner-dismissed");
+      setDismissed(false);
+      setShowBanner(true);
+
+      // Note: We cannot programmatically revoke browser notification permission
+      // This is a security feature - users must manually reset permissions via browser settings
+      console.log("ℹ️ Push subscription removed. To fully reset browser permissions, use browser settings (lock icon in address bar).");
     } catch (error) {
       console.error("Failed to unsubscribe from push notifications:", error);
     }
@@ -170,8 +185,11 @@ export function NotificationPermission() {
     );
   }
 
-  // Show subscription banner
-  if (showBanner && canSubscribe) {
+  // Show subscription banner when:
+  // - showBanner is true (user hasn't dismissed or just unsubscribed)
+  // - Not currently subscribed
+  // - Permission is granted or default (not denied)
+  if (showBanner && !isSubscribed && permission !== "denied") {
     return (
       <div className="space-y-3">
         <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
@@ -213,45 +231,10 @@ export function NotificationPermission() {
     );
   }
 
-  // Fallback: Show notification options when no banner is displayed
-  if (!showBanner && !isSubscribed && isSupported) {
-    return (
-      <Alert className="mb-4 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-        <Bell className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-        <AlertDescription className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              Notification settings
-            </p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              {permission === "denied"
-                ? "Notifications are blocked in your browser"
-                : "Push notifications available"
-              }
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {permission === "default" && (
-              <Button size="sm" onClick={handleSubscribe} disabled={isLoading} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4 mr-1" />}
-                Enable
-              </Button>
-            )}
-            {permission === "denied" && (
-              <Button size="sm" variant="outline" onClick={() => {
-                localStorage.removeItem("notification-banner-dismissed");
-                setDismissed(false);
-                setShowBanner(true);
-              }} className="dark:border-gray-600 dark:hover:bg-gray-700 dark:text-gray-200">
-                <Bell className="h-4 w-4 mr-1" />
-                Try Again
-              </Button>
-            )}
-          </div>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
+  // Don't show anything if:
+  // - Not supported
+  // - Already subscribed (green banner shown above)
+  // - Permission denied (yellow banner shown above)
+  // - Banner dismissed and no subscription (user chose to dismiss)
   return null;
 }

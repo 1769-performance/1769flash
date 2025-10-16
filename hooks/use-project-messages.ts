@@ -144,12 +144,15 @@ export function useProjectMessages({
 
             case "message.history":
               // Load historical messages when first connecting
-              console.log(`[WebSocket] ${timestamp} 📚 message.history event:`, {
-                hasMessages: !!data.messages,
-                isArray: Array.isArray(data.messages),
-                messageCount: data.messages?.length || 0,
-                messages: data.messages,
-              });
+              console.log(
+                `[WebSocket] ${timestamp} 📚 message.history event:`,
+                {
+                  hasMessages: !!data.messages,
+                  isArray: Array.isArray(data.messages),
+                  messageCount: data.messages?.length || 0,
+                  messages: data.messages,
+                }
+              );
 
               if (data.messages && Array.isArray(data.messages)) {
                 console.log(
@@ -197,10 +200,11 @@ export function useProjectMessages({
                   onMessageRef.current(data.message);
                 }
 
+                // DISABLED: Using Web Push notifications instead (sent by backend)
                 // Show browser notification only if message is NOT from current user
-                if (data.message.sender_username !== currentUsername) {
-                  showNotification(data.message);
-                }
+                // if (data.message.sender_username !== currentUsername) {
+                //   showNotification(data.message);
+                // }
               } else {
                 console.warn(
                   `[WebSocket] ${timestamp} ⚠️ message.new has no message data`
@@ -350,10 +354,11 @@ export function useProjectMessages({
               onMessageRef.current(message);
             }
 
+            // DISABLED: Using Web Push notifications instead (sent by backend)
             // Show notifications for messages not from current user
-            if (message.sender_username !== currentUsername) {
-              showNotification(message);
-            }
+            // if (message.sender_username !== currentUsername) {
+            //   showNotification(message);
+            // }
           });
         }
       } catch (err) {
@@ -444,10 +449,13 @@ export function useProjectMessages({
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const elapsed = Date.now() - startTime;
-      console.log(`[REST Fallback] ${elapsed}ms elapsed. Checking if history was received...`, {
-        historyReceived: historyReceivedRef.current,
-        currentMessageCount: messages.length,
-      });
+      console.log(
+        `[REST Fallback] ${elapsed}ms elapsed. Checking if history was received...`,
+        {
+          historyReceived: historyReceivedRef.current,
+          currentMessageCount: messages.length,
+        }
+      );
 
       // Only load from REST if we haven't received history from WebSocket
       if (!historyReceivedRef.current) {
@@ -458,12 +466,16 @@ export function useProjectMessages({
 
           // Load all pages of messages
           let allMessages: Message[] = [];
-          let nextUrl: string | null = `/projects/${projectId}/messages/?limit=100`; // Use larger page size
+          let nextUrl:
+            | string
+            | null = `/projects/${projectId}/messages/?limit=100`; // Use larger page size
           let pageCount = 0;
 
           while (nextUrl) {
             pageCount++;
-            console.log(`[REST Fallback] Fetching page ${pageCount}: ${nextUrl}`);
+            console.log(
+              `[REST Fallback] Fetching page ${pageCount}: ${nextUrl}`
+            );
 
             const response = await getJson<{
               results: Message[];
@@ -497,15 +509,17 @@ export function useProjectMessages({
           );
           if (allMessages.length > 0) {
             console.log(`[REST Fallback] First message:`, allMessages[0]);
-            console.log(`[REST Fallback] Last message:`, allMessages[allMessages.length - 1]);
+            console.log(
+              `[REST Fallback] Last message:`,
+              allMessages[allMessages.length - 1]
+            );
           }
 
           setMessages(allMessages);
 
           // Set the last message ID for polling
           if (allMessages.length > 0) {
-            lastMessageIdRef.current =
-              allMessages[allMessages.length - 1].uuid;
+            lastMessageIdRef.current = allMessages[allMessages.length - 1].uuid;
           }
         } catch (err) {
           console.error(`[REST Fallback] ❌ Failed to load messages:`, err);
@@ -545,7 +559,9 @@ export function useProjectMessages({
 
     // Cleanup on unmount only (not on re-renders)
     return () => {
-      console.log(`[WebSocket] Cleaning up connection for project ${projectId}`);
+      console.log(
+        `[WebSocket] Cleaning up connection for project ${projectId}`
+      );
       shouldReconnectRef.current = false;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -572,6 +588,10 @@ export function useProjectMessages({
 
 /**
  * Show browser notification for new message
+ *
+ * NOTE: Currently DISABLED in favor of Web Push notifications sent by backend.
+ * Backend sends push notifications via service worker (see sw.js) which provides
+ * better reliability and works even when the tab is closed.
  */
 function showNotification(message: Message) {
   // Check if notifications are supported
@@ -590,8 +610,7 @@ function showNotification(message: Message) {
           (message.text.length > 100 ? "..." : ""),
         tag: `message-${message.uuid}`, // Prevents duplicate notifications
         requireInteraction: false,
-        icon: "/logo.png",
-        badge: "/badge.png",
+        icon: "/notification_icon.png",
         silent: false, // Ensure sound is not muted
       }
     );
@@ -648,7 +667,7 @@ export function initializeNotificationAudio() {
 
 /**
  * Play notification sound
- * Uses the notification.mp3 file from public folder, similar to how badge.png is used
+ * Uses the notification.mp3 file from public folder, similar to how notification_icon.png is used
  */
 function playNotificationSound() {
   // Initialize audio if not already done

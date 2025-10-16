@@ -194,9 +194,7 @@ export function ProjectMessages({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
-              {projectTitle ? `Messages - ${projectTitle}` : "Project Messages"}
-            </CardTitle>
+            <CardTitle className="text-lg">Messages</CardTitle>
             {/* Connection status and unread count inside card header */}
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (

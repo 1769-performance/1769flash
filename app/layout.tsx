@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { Suspense } from "react"
 import { AudioInitializer } from "@/components/audio-initializer"
+import { NotificationSoundInitializer } from "@/components/notification-sound-initializer"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <AuthProvider>
               <AudioInitializer />
+              <NotificationSoundInitializer />
               {children}
               <Toaster />
             </AuthProvider>

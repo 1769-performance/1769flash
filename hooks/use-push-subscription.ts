@@ -8,7 +8,7 @@
  * - Subscription lifecycle management
  */
 
-import { getJson, postJson } from "@/lib/api";
+import { deleteJson, getJson, postJson } from "@/lib/api";
 import { useCallback, useEffect, useState } from "react";
 
 /**
@@ -30,12 +30,12 @@ function base64ToUint8Array(base64: string): Uint8Array {
 function base64urlToUint8Array(base64url: string): Uint8Array {
   // Convert base64url to base64
   let base64 = base64url
-    .replace(/-/g, '+')  // Replace URL-safe characters
-    .replace(/_/g, '/');   // Replace URL-safe characters
+    .replace(/-/g, "+") // Replace URL-safe characters
+    .replace(/_/g, "/"); // Replace URL-safe characters
 
   // Add padding back if needed
   while (base64.length % 4) {
-    base64 += '=';
+    base64 += "=";
   }
 
   return base64ToUint8Array(base64);
@@ -104,11 +104,51 @@ export function usePushSubscription({
     const registerServiceWorker = async () => {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js");
-        console.log("Service worker registered:", registration);
+        console.log("✅ Service worker registered:", registration);
+
+        // Log service worker state
+        const sw =
+          registration.installing ||
+          registration.waiting ||
+          registration.active;
+        if (sw) {
+          console.log(`📊 Service worker state: ${sw.state}`);
+
+          // Listen for state changes
+          sw.addEventListener("statechange", (e) => {
+            console.log(
+              `🔄 Service worker state changed to: ${
+                (e.target as ServiceWorker).state
+              }`
+            );
+          });
+        }
+
+        // Log registration details
+        console.log("📦 SW Registration details:", {
+          scope: registration.scope,
+          active: registration.active?.state,
+          waiting: registration.waiting?.state,
+          installing: registration.installing?.state,
+        });
+
+        // Check if SW is ready to receive push
+        if (registration.active) {
+          console.log(
+            "✅ Service worker is ACTIVE and ready to receive push notifications"
+          );
+        } else if (registration.waiting) {
+          console.warn(
+            '⚠️ Service worker is WAITING to activate. May need to close all tabs or click "skipWaiting" in DevTools'
+          );
+        } else if (registration.installing) {
+          console.log("⏳ Service worker is INSTALLING...");
+        }
+
         setSwRegistration(registration);
         return registration;
       } catch (err) {
-        console.error("Service worker registration failed:", err);
+        console.error("❌ Service worker registration failed:", err);
         setError("Failed to register service worker");
         return null;
       }
@@ -117,33 +157,79 @@ export function usePushSubscription({
     registerServiceWorker();
   }, [isSupported]);
 
-  // Load existing subscription
+  // Load existing subscription and sync state between browser and server
   useEffect(() => {
     if (!swRegistration) return;
 
     const loadSubscription = async () => {
       try {
+        // Always check browser subscription state
         const pushSubscription =
           await swRegistration.pushManager.getSubscription();
+
+        // Always check server subscription state
+        const response = await getJson<any>("/push/subscriptions/");
+        const subscriptions = response.results || response;
+
+        console.log("🔄 Syncing subscription state:", {
+          browserHasSubscription: !!pushSubscription,
+          serverSubscriptions: Array.isArray(subscriptions)
+            ? subscriptions.length
+            : 0,
+        });
+
+        if (!Array.isArray(subscriptions)) {
+          console.error("Unexpected API response format:", response);
+          setSubscription(null);
+          return;
+        }
+
+        // Find active subscriptions on server
+        const activeSubscriptions = subscriptions.filter(
+          (sub: any) => sub.is_active
+        );
+
         if (pushSubscription) {
-          // Fetch subscription details from server
-          const response = await getJson<any>("/push/subscriptions/");
+          // Browser has subscription - check if it matches server
+          const matchingSubscription = activeSubscriptions.find(
+            (sub: any) => sub.endpoint === pushSubscription.endpoint
+          );
 
-          // Handle paginated response structure
-          const subscriptions = response.results || response;
-
-          if (Array.isArray(subscriptions)) {
-            const currentSubscription = subscriptions.find(
-              (sub) => sub.endpoint === pushSubscription.endpoint
-            );
-            setSubscription(currentSubscription || null);
+          if (matchingSubscription) {
+            console.log("✅ Browser and server subscriptions match");
+            setSubscription(matchingSubscription);
           } else {
-            console.error("Unexpected API response format:", response);
+            console.warn(
+              "⚠️ Browser subscription not found on server, will re-sync on next subscribe"
+            );
             setSubscription(null);
           }
+        } else {
+          // Browser has NO subscription
+          if (activeSubscriptions.length > 0) {
+            console.log(
+              "🧹 Browser has no subscription but server has active subscriptions, cleaning up"
+            );
+            // Deactivate stale server subscriptions
+            for (const sub of activeSubscriptions) {
+              try {
+                await fetch(
+                  `${process.env.NEXT_PUBLIC_API_BASE_URL}/push/subscriptions/${sub.uuid}/`,
+                  {
+                    method: "DELETE",
+                    credentials: "include",
+                  }
+                );
+                console.log(`🗑️ Deactivated stale subscription: ${sub.uuid}`);
+              } catch (err) {
+                console.error("Failed to deactivate stale subscription:", err);
+              }
+            }
+          }
+          setSubscription(null);
         }
       } catch (err) {
-        console.error("Failed to load subscription:", err);
+        console.error("❌ Failed to load subscription:", err);
         setSubscription(null);
       }
     };
@@ -154,36 +240,18 @@ export function usePushSubscription({
   // Get VAPID public key
   const getVapidPublicKey = useCallback(async (): Promise<Uint8Array> => {
     try {
-      // Add multiple cache-busting parameters to ensure fresh response
+      // Add cache-busting parameter to ensure fresh response
       const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(7);
       const response = await getJson<{ public_key: string }>(
-        `/push/subscriptions/vapid-public-key/?t=${timestamp}&r=${random}&cb=${timestamp}`
+        `/push/subscriptions/vapid-public-key/?t=${timestamp}`
       );
 
-      // The backend should return base64url-encoded VAPID key
-      const rawKey = response.public_key;
-      console.log("Raw VAPID public key:", rawKey);
-      console.log("Key length:", rawKey.length);
+      // The backend returns base64url-encoded VAPID key ready for Web Push API
+      const base64urlKey = response.public_key;
+      console.log("VAPID public key from backend:", base64urlKey);
+      console.log("Key length:", base64urlKey.length);
 
-      // Detect format and handle appropriately
-      // Base64url (Web Push standard): shorter, no padding, contains - or _, usually 88 chars
-      // DER-encoded (fallback): longer, has padding ==, contains only +/ chars, usually 126+ chars
-      if (rawKey.length < 100 && !rawKey.includes('==') && (rawKey.includes('-') || rawKey.includes('_'))) {
-        console.log("Detected base64url format (Web Push standard)");
-        return handleBase64urlKey(rawKey);
-      } else if (rawKey.length > 100 && (rawKey.includes('==') || /^[A-Za-z0-9+/=]+$/.test(rawKey))) {
-        console.log("Detected DER-encoded format, extracting base64url key");
-        return handleDerEncodedKey(rawKey);
-      } else {
-        console.log("Unknown format, trying base64url first");
-        try {
-          return handleBase64urlKey(rawKey);
-        } catch (b64urlError) {
-          console.log("Base64url failed, trying DER format");
-          return handleDerEncodedKey(rawKey);
-        }
-      }
+      return handleBase64urlKey(base64urlKey);
     } catch (err) {
       console.error("Failed to get VAPID public key:", err);
       throw new Error("VAPID keys not configured");
@@ -202,59 +270,29 @@ export function usePushSubscription({
 
       // Verify this is the correct format (should be 65 bytes for uncompressed P-256)
       if (bytes.length !== 65) {
-        throw new Error(`Invalid VAPID public key length: ${bytes.length}, expected 65`);
+        throw new Error(
+          `Invalid VAPID public key length: ${bytes.length}, expected 65`
+        );
       }
 
       // Verify first byte is 0x04 (uncompressed point format)
       if (bytes[0] !== 0x04) {
-        throw new Error(`Invalid VAPID public key format: first byte is 0x${bytes[0].toString(16)}, expected 0x04`);
+        throw new Error(
+          `Invalid VAPID public key format: first byte is 0x${bytes[0].toString(
+            16
+          )}, expected 0x04`
+        );
       }
 
       console.log("Successfully decoded base64url VAPID key");
       return bytes;
     } catch (err) {
       console.error("Failed to decode base64url key:", err);
-      throw new Error(`Failed to decode base64url VAPID key: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
-
-  // Handle DER-encoded X.256 public key (fallback format)
-  const handleDerEncodedKey = (derKey: string): Uint8Array => {
-    console.log("Processing DER-encoded key:", derKey);
-
-    try {
-      // Clean the base64 string
-      const cleanBase64Key = derKey.replace(/[^A-Za-z0-9+/=]/g, '');
-
-      // Add padding if needed
-      const paddingNeeded = (4 - (cleanBase64Key.length % 4)) % 4;
-      const paddedBase64Key = cleanBase64Key + '='.repeat(paddingNeeded);
-
-      console.log("Cleaned and padded base64:", paddedBase64Key);
-
-      // Use proper base64 decoding
-      const derKeyBytes = base64ToUint8Array(paddedBase64Key);
-
-      console.log("DER key length:", derKeyBytes.length);
-
-      // Extract the raw 65-byte public key (last 65 bytes)
-      if (derKeyBytes.length < 65) {
-        throw new Error(`DER key too short: ${derKeyBytes.length} bytes, expected at least 65`);
-      }
-
-      const rawPublicKey = derKeyBytes.slice(-65);
-      console.log("Extracted raw key length:", rawPublicKey.length);
-
-      // Verify this is the correct format (uncompressed point)
-      if (rawPublicKey.length !== 65 || rawPublicKey[0] !== 0x04) {
-        throw new Error(`Invalid VAPID public key format: length=${rawPublicKey.length}, first_byte=${rawPublicKey[0]?.toString(16)}`);
-      }
-
-      console.log("Successfully extracted VAPID key from DER format");
-      return rawPublicKey;
-    } catch (err) {
-      console.error("Failed to decode DER key:", err);
-      throw new Error(`Failed to decode DER VAPID key: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to decode base64url VAPID key: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     }
   };
 
@@ -287,7 +325,12 @@ export function usePushSubscription({
         applicationServerKey,
       });
 
-      console.log("Push subscription created:", pushSubscription);
+      console.log("✅ Push subscription created:", pushSubscription);
+      console.log("📊 Push subscription details:", {
+        endpoint: pushSubscription.endpoint,
+        expirationTime: pushSubscription.expirationTime,
+        keys: pushSubscription.toJSON().keys,
+      });
 
       // Send subscription to server
       const subscriptionData = {
@@ -309,7 +352,7 @@ export function usePushSubscription({
       // Show success notification
       new Notification("Push notifications enabled!", {
         body: "You'll receive notifications even when the tab is closed.",
-        icon: "/logo.png",
+        icon: "/notification_icon.png",
         tag: "push-enabled",
       });
 
@@ -328,41 +371,41 @@ export function usePushSubscription({
   // Unsubscribe from push notifications
   const unsubscribe = useCallback(async () => {
     if (!subscription) {
+      console.warn("⚠️ Unsubscribe called but no subscription found");
       return;
     }
 
+    console.log("🔄 Starting unsubscribe process...");
     setIsLoading(true);
     setError(null);
 
     try {
-      // Delete subscription from server using our API client
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/push/subscriptions/${subscription.uuid}/`,
-        {
-          method: "DELETE",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Unsubscribe from push
+      // Step 1: Unsubscribe from browser first (more important)
       const pushSubscription =
         await swRegistration?.pushManager.getSubscription();
       if (pushSubscription) {
-        await pushSubscription.unsubscribe();
+        console.log("🗑️ Unsubscribing from browser push manager...");
+        const unsubscribed = await pushSubscription.unsubscribe();
+        console.log(`✅ Browser unsubscribe result: ${unsubscribed}`);
+      } else {
+        console.warn("⚠️ No browser push subscription found");
       }
 
+      // Step 2: Delete subscription from server (with CSRF token)
+      console.log(`🗑️ Deleting subscription from server: ${subscription.uuid}`);
+      await deleteJson(`/push/subscriptions/${subscription.uuid}/`);
+      console.log("✅ Server subscription deleted");
+
+      // Step 3: Clear local state
       setSubscription(null);
       onSubscriptionChange?.(null);
 
-      console.log("Push subscription removed");
+      console.log("✅ Push subscription removed successfully");
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to unsubscribe";
       setError(errorMessage);
-      console.error("Push unsubscribe failed:", err);
+      console.error("❌ Push unsubscribe failed:", err);
       throw err;
     } finally {
       setIsLoading(false);
