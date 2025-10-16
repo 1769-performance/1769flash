@@ -34,6 +34,7 @@ import {
   ReferenceArea,
   ResponsiveContainer,
   Tooltip,
+  XAxis,
   YAxis,
 } from "recharts";
 
@@ -757,17 +758,17 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
                       stroke="#e2e8f0"
                       strokeWidth={0.5}
                     />
-                    {/* <XAxis
+                    <XAxis
                       dataKey="time"
                       type="number"
                       scale="linear"
                       domain={["dataMin", "dataMax"]}
-                      tickFormatter={(value) => formatTime(value)}
-                      fontSize={11}
-                      stroke="#64748b"
-                      tickCount={8}
-                      height={30}
-                    /> */}
+                      tick={false}
+                      axisLine={false}
+                      tickLine={false}
+                      height={0}
+                      hide={false}
+                    />
                     {/* Left side axes */}
                     <YAxis
                       yAxisId="L1"
