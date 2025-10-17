@@ -20,17 +20,19 @@ interface EcuPanelProps {
   onFileUpload?: (ecuSerial: string) => void
   onLogVisualize?: (log: Log) => void
   onFileUploaded?: () => void
+  externalRefreshTrigger?: number
 }
 
-export function EcuPanel({ 
-  ecus, 
-  selectedEcuSerial, 
+export function EcuPanel({
+  ecus,
+  selectedEcuSerial,
   onEcuClick,
   isDealer = false,
   projectUuid,
   onFileUpload,
   onLogVisualize,
-  onFileUploaded
+  onFileUploaded,
+  externalRefreshTrigger
 }: EcuPanelProps) {
   const [expandedEcus, setExpandedEcus] = useState<Set<string>>(new Set())
   const [expandedSvts, setExpandedSvts] = useState<Set<string>>(new Set())
@@ -38,12 +40,14 @@ export function EcuPanel({
   const [ecuFiles, setEcuFiles] = useState<Record<string, File[]>>({})
   const [loadingFiles, setLoadingFiles] = useState<Set<string>>(new Set())
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({})
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // Fetch files when ECU is selected
+  // Fetch files when ECU is selected or refresh is triggered
   useEffect(() => {
     const fetchEcuFiles = async (ecuSerial: string) => {
-      if (ecuFiles[ecuSerial] || loadingFiles.has(ecuSerial)) {
-        return // Already loaded or loading
+      // Skip if already loading
+      if (loadingFiles.has(ecuSerial)) {
+        return
       }
 
       setLoadingFiles(prev => new Set(prev).add(ecuSerial))
@@ -100,10 +104,10 @@ export function EcuPanel({
       }
     }
 
-    if (selectedEcuSerial && !ecuFiles[selectedEcuSerial]) {
+    if (selectedEcuSerial) {
       fetchEcuFiles(selectedEcuSerial)
     }
-  }, [selectedEcuSerial]) // Removed ecuFiles and loadingFiles dependencies to prevent infinite loops
+  }, [selectedEcuSerial, refreshTrigger, externalRefreshTrigger]) // Fetch when ECU is selected, manual refresh, or external refresh (from notification)
 
   const toggleEcuExpansion = (ecuSerial: string) => {
     const newExpanded = new Set(expandedEcus)
@@ -282,12 +286,8 @@ export function EcuPanel({
                         ecuSerial={ecu.serial}
                         onFileUploaded={() => {
                           onFileUploaded?.()
-                          // Clear cached files to trigger refresh
-                          setEcuFiles(prev => {
-                            const newFiles = { ...prev }
-                            delete newFiles[ecu.serial]
-                            return newFiles
-                          })
+                          // Trigger refresh to fetch updated file list
+                          setRefreshTrigger(prev => prev + 1)
                         }}
                       />
                     )}
