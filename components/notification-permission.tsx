@@ -125,7 +125,7 @@ export function NotificationPermission() {
     return (
       <Alert className="mb-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
         <Wifi className="h-4 w-4 text-green-600 dark:text-green-400" />
-        <AlertDescription className="flex items-center justify-between gap-4">
+        <AlertDescription className="space-y-4 sm:space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
           <div className="flex-1">
             <p className="text-sm font-medium text-green-900 dark:text-green-100">
               Push notifications enabled
@@ -139,12 +139,12 @@ export function NotificationPermission() {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-green-700 border-green-300 dark:text-green-300 dark:border-green-600">
+          <div className="flex flex-row gap-2 lg:flex-col lg:w-auto">
+            <Badge variant="outline" className="h-8 px-3 text-green-700 border-green-300 dark:text-green-300 dark:border-green-600">
               Active
             </Badge>
             <Button size="sm" variant="outline" onClick={handleUnsubscribe} disabled={isLoading} className="dark:border-green-600 dark:hover:bg-green-900 dark:text-green-100">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <WifiOff className="h-4 w-4 mr-1" />}
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <WifiOff className="h-4 w-4 mr-1 shrink-0" />}
               Disable
             </Button>
           </div>
@@ -159,7 +159,7 @@ export function NotificationPermission() {
     return (
       <Alert className="mb-4 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
         <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-        <AlertDescription className="flex items-center justify-between gap-4">
+        <AlertDescription className="space-y-4 sm:space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
           <div className="flex-1">
             <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
               Notifications blocked
@@ -168,8 +168,8 @@ export function NotificationPermission() {
               Enable notifications in your browser settings to receive real-time updates
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-yellow-700 border-yellow-300 dark:text-yellow-300 dark:border-yellow-600">
+          <div className="flex flex-row gap-2 lg:flex-col lg:w-auto">
+            <Badge variant="outline" className="h-8 px-3 text-yellow-700 border-yellow-300 dark:text-yellow-300 dark:border-yellow-600">
               Blocked
             </Badge>
             <Button size="sm" variant="outline" onClick={() => {
@@ -202,15 +202,15 @@ export function NotificationPermission() {
               </p>
             </div>
             <div className="flex flex-row gap-2 lg:flex-col lg:w-auto">
-              <Button size="sm" variant="outline" onClick={handleDismiss} className="flex-1 lg:w-full dark:border-blue-600 dark:hover:bg-blue-900 dark:text-blue-100">
-                <X className="h-4 w-4 mr-2 shrink-0" />
+              <Button size="sm" variant="outline" onClick={handleDismiss} className="dark:border-blue-600 dark:hover:bg-blue-900 dark:text-blue-100">
+                <X className="h-4 w-4 mr-1 shrink-0" />
                 <span>Dismiss</span>
               </Button>
-              <Button size="sm" onClick={handleSubscribe} disabled={isLoading} className="flex-1 lg:w-full dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+              <Button size="sm" onClick={handleSubscribe} disabled={isLoading} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin shrink-0" />
                 ) : (
-                  <Bell className="h-4 w-4 mr-2 shrink-0" />
+                  <Bell className="h-4 w-4 mr-1 shrink-0" />
                 )}
                 <span>Enable</span>
               </Button>
