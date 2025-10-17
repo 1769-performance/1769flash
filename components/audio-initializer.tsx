@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { initializeNotificationAudio } from "@/hooks/use-project-messages"
+import { initializeNotificationAudio } from "@/lib/notification-audio"
 
 /**
  * Component to initialize notification audio on first user interaction
