@@ -10,7 +10,6 @@
 
 "use client";
 
-import { NotificationPermission } from "@/components/notification-permission";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -181,9 +180,6 @@ export function ProjectMessages({
 
   return (
     <div className="space-y-4">
-      {/* Notification permission banner */}
-      <NotificationPermission />
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error.message}</AlertDescription>

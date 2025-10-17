@@ -3,6 +3,7 @@
 import { DataTable } from "@/components/data-table";
 import { ListFilters } from "@/components/list-filters";
 import { NewProjectDialog } from "@/components/new-project-dialog";
+import { NotificationPermission } from "@/components/notification-permission";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -121,6 +122,30 @@ function ProjectsPageContent() {
     };
   }, [refreshAllCounts]);
 
+  // Listen for service worker messages (auto-refresh on project creation notifications)
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      // Handle project list refresh request (from notification arrival or click)
+      if (event.data?.type === "RELOAD_PAGE") {
+        const notificationData = event.data?.data;
+
+        // Check if this is a project creation notification
+        if (notificationData?.project_uuid || event.data?.reason === "project_created") {
+          // Refresh project list
+          refetch();
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleMessage);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleMessage);
+    };
+  }, [refetch]);
+
   // Dynamic columns based on user role
   const columns = [
     {
@@ -212,6 +237,9 @@ function ProjectsPageContent() {
           )}
         </div>
       </div>
+
+      {/* Notification Permission Banner */}
+      <NotificationPermission />
 
       {/* Filters */}
       <div className="mb-6">

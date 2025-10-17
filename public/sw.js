@@ -129,11 +129,20 @@ self.addEventListener("push", (event) => {
             url: "/notification_sound.mp3",
           });
 
-          // Auto-refresh file list if this is a file/log upload notification
+          // Auto-refresh for file/log upload notifications
           if (notificationData.data?.file_uuid || notificationData.data?.log_uuid) {
             page.postMessage({
               type: "RELOAD_PAGE",
               reason: "file_uploaded",
+              data: notificationData.data,
+            });
+          }
+
+          // Auto-refresh for new project notifications
+          if (notificationData.data?.project_uuid && notificationData.data?.url === "/projects") {
+            page.postMessage({
+              type: "RELOAD_PAGE",
+              reason: "project_created",
               data: notificationData.data,
             });
           }

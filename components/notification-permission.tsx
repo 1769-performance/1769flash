@@ -38,28 +38,7 @@ export function NotificationPermission() {
     },
   });
 
-  // Debug log the initial state
-  console.log('NotificationPermission initial state:', {
-    isSupported,
-    permission,
-    isLoading,
-    error,
-    subscription,
-    canSubscribe,
-    isSubscribed,
-    showBanner
-  });
-
   useEffect(() => {
-    // Debug logging
-    console.log('NotificationPermission Debug:', {
-      isSupported,
-      permission,
-      isSubscribed,
-      canSubscribe,
-      dismissed
-    });
-
     // Show banner if notifications are supported, not subscribed, not dismissed, and permission is not denied
     const isDismissed = localStorage.getItem("notification-banner-dismissed") === "true";
     setDismissed(isDismissed);
@@ -68,15 +47,8 @@ export function NotificationPermission() {
     const canShowBanner = isSupported && !isSubscribed && !isDismissed && permission !== "denied";
 
     if (canShowBanner) {
-      console.log('Showing banner - all conditions met');
       setShowBanner(true);
     } else {
-      console.log('Not showing banner:', {
-        isSupported,
-        isSubscribed,
-        isDismissed,
-        permission
-      });
       // Don't hide banner if it was manually shown (e.g., after unsubscribe)
       if (!canShowBanner && isDismissed) {
         setShowBanner(false);
@@ -123,33 +95,37 @@ export function NotificationPermission() {
   // Show always visible notification options for subscribed users
   if (isSubscribed) {
     return (
-      <Alert className="mb-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-        <Wifi className="h-4 w-4 text-green-600 dark:text-green-400" />
-        <AlertDescription className="space-y-4 sm:space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-green-900 dark:text-green-100">
-              Push notifications enabled
-            </p>
-            <p className="text-sm text-green-700 dark:text-green-300">
-              You&apos;ll receive notifications even when the tab is closed
-            </p>
-            {subscription && (
-              <p className="text-xs text-green-600 mt-1 dark:text-green-400">
-                Active since {new Date(subscription.created).toLocaleDateString()}
+      <div className="mb-4 max-w-3xl">
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+          <Wifi className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                Push notifications enabled
               </p>
-            )}
-          </div>
-          <div className="flex flex-row gap-2 lg:flex-col lg:w-auto">
-            <Badge variant="outline" className="h-8 px-3 text-green-700 border-green-300 dark:text-green-300 dark:border-green-600">
-              Active
-            </Badge>
-            <Button size="sm" variant="outline" onClick={handleUnsubscribe} disabled={isLoading} className="dark:border-green-600 dark:hover:bg-green-900 dark:text-green-100">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <WifiOff className="h-4 w-4 mr-1 shrink-0" />}
-              Disable
+              <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                Active since {subscription ? new Date(subscription.created).toLocaleDateString() : 'today'}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleUnsubscribe}
+              disabled={isLoading}
+              className="shrink-0 border-green-300 hover:bg-green-100 dark:border-green-600 dark:hover:bg-green-900"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <WifiOff className="h-4 w-4 mr-2" />
+                  Disable
+                </>
+              )}
             </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
@@ -157,31 +133,33 @@ export function NotificationPermission() {
   // Show permission denied message with option to reset
   if (permission === "denied") {
     return (
-      <Alert className="mb-4 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
-        <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-        <AlertDescription className="space-y-4 sm:space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-              Notifications blocked
-            </p>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              Enable notifications in your browser settings to receive real-time updates
-            </p>
-          </div>
-          <div className="flex flex-row gap-2 lg:flex-col lg:w-auto">
-            <Badge variant="outline" className="h-8 px-3 text-yellow-700 border-yellow-300 dark:text-yellow-300 dark:border-yellow-600">
-              Blocked
-            </Badge>
-            <Button size="sm" variant="outline" onClick={() => {
-              localStorage.removeItem("notification-banner-dismissed");
-              setDismissed(false);
-              setShowBanner(true);
-            }} className="dark:border-yellow-600 dark:hover:bg-yellow-900 dark:text-yellow-100">
+      <div className="mb-4 max-w-3xl">
+        <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
+          <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          <AlertDescription className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+                Notifications blocked
+              </p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                Enable in browser settings to receive updates
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                localStorage.removeItem("notification-banner-dismissed");
+                setDismissed(false);
+                setShowBanner(true);
+              }}
+              className="shrink-0 border-yellow-300 hover:bg-yellow-100 dark:border-yellow-600 dark:hover:bg-yellow-900"
+            >
               Try Again
             </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
@@ -191,39 +169,54 @@ export function NotificationPermission() {
   // - Permission is granted or default (not denied)
   if (showBanner && !isSubscribed && permission !== "denied") {
     return (
-      <div className="space-y-3">
-        <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+      <div className="mb-4 max-w-3xl space-y-3">
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
           <Bell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="space-y-4 sm:space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
+          <AlertDescription className="flex items-center justify-between gap-4">
             <div className="flex-1">
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Enable push notifications</p>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Get real-time alerts for messages, file uploads, and project updates - even when the tab is closed
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Enable push notifications
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Get alerts for new projects, messages, and file uploads
               </p>
             </div>
-            <div className="flex flex-row gap-2 lg:flex-col lg:w-auto">
-              <Button size="sm" variant="outline" onClick={handleDismiss} className="dark:border-blue-600 dark:hover:bg-blue-900 dark:text-blue-100">
-                <X className="h-4 w-4 mr-1 shrink-0" />
-                <span>Dismiss</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleDismiss}
+                className="border-blue-300 hover:bg-blue-100 dark:border-blue-600 dark:hover:bg-blue-900"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Dismiss
               </Button>
-              <Button size="sm" onClick={handleSubscribe} disabled={isLoading} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSubscribe}
+                disabled={isLoading}
+                className="border-blue-300 hover:bg-blue-100 dark:border-blue-600 dark:hover:bg-blue-900"
+              >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin shrink-0" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Bell className="h-4 w-4 mr-1 shrink-0" />
+                  <>
+                    <Bell className="h-4 w-4 mr-2" />
+                    Enable
+                  </>
                 )}
-                <span>Enable</span>
               </Button>
             </div>
           </AlertDescription>
         </Alert>
 
         {error && (
-          <Alert className="mb-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
             <WifiOff className="h-4 w-4 text-red-600 dark:text-red-400" />
             <AlertDescription>
               <p className="text-sm text-red-900 dark:text-red-100">Failed to enable notifications</p>
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+              <p className="text-xs text-red-700 dark:text-red-300 mt-1">{error}</p>
             </AlertDescription>
           </Alert>
         )}
