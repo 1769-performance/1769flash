@@ -583,17 +583,15 @@ export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: 
             >
               <Download className="h-3 w-3" />
             </Button>
-            {projectUuid && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={copyShareLink}
-                className="h-7 px-2"
-                title="Copy shareable link"
-              >
-                <Share2 className="h-3 w-3" />
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={copyShareLink}
+              className="h-7 px-2"
+              title="Copy shareable link"
+            >
+              <Share2 className="h-3 w-3" />
+            </Button>
             <Button
               size="sm"
               variant="ghost"
