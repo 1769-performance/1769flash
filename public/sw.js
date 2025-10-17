@@ -128,6 +128,15 @@ self.addEventListener("push", (event) => {
             type: "PLAY_NOTIFICATION_SOUND",
             url: "/notification_sound.mp3",
           });
+
+          // Auto-refresh file list if this is a file/log upload notification
+          if (notificationData.data?.file_uuid || notificationData.data?.log_uuid) {
+            page.postMessage({
+              type: "RELOAD_PAGE",
+              reason: "file_uploaded",
+              data: notificationData.data,
+            });
+          }
         }
 
         // Step 2: Show the notification
@@ -152,60 +161,28 @@ self.addEventListener("push", (event) => {
 
 // Notification click event - handle user interaction
 self.addEventListener("notificationclick", (event) => {
-  console.log("[SW NotifClick] ========== Notification clicked ==========");
-  console.log("[SW NotifClick] Notification data:", JSON.stringify(event.notification.data, null, 2));
-
   event.notification.close();
 
-  // Handle navigation based on notification data
   const urlToOpen = event.notification.data?.url || "/projects";
   const hasFileUpload = event.notification.data?.file_uuid || event.notification.data?.log_uuid;
-
-  console.log("[SW NotifClick] URL to open:", urlToOpen);
-  console.log("[SW NotifClick] Has file upload:", hasFileUpload);
 
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
-        console.log(`[SW NotifClick] Found ${clientList.length} open client(s)`);
-
         // Check if a client is already open at the target URL
         for (const client of clientList) {
           const clientUrl = new URL(client.url);
           const targetUrl = new URL(urlToOpen, self.location.origin);
 
-          console.log(`[SW NotifClick] Comparing URLs:`);
-          console.log(`  - Client: ${clientUrl.pathname}`);
-          console.log(`  - Target: ${targetUrl.pathname}`);
-
           // Match by pathname (ignore query params and hash)
           if (clientUrl.pathname === targetUrl.pathname && "focus" in client) {
-            console.log("[SW NotifClick] ✅ Found matching client!");
-
-            // Always send reload message for project pages with file uploads
+            // Send reload message for project pages with file uploads
             if (hasFileUpload && targetUrl.pathname.startsWith('/projects/')) {
-              console.log("[SW NotifClick] 📨 Sending RELOAD_PAGE message to client");
-
-              // Try postMessage first
-              try {
-                client.postMessage({
-                  type: "RELOAD_PAGE",
-                  reason: "file_uploaded"
-                });
-                console.log("[SW NotifClick] ✅ Message sent successfully");
-              } catch (err) {
-                console.error("[SW NotifClick] ❌ Failed to send message:", err);
-              }
-
-              // Focus the window
-              client.focus().then(() => {
-                console.log("[SW NotifClick] ✅ Window focused");
+              client.postMessage({
+                type: "RELOAD_PAGE",
+                reason: "file_uploaded"
               });
-
-              return;
-            } else {
-              console.log("[SW NotifClick] ⚠️ Not a file upload or not a project page, just focusing");
             }
 
             return client.focus();
@@ -214,7 +191,6 @@ self.addEventListener("notificationclick", (event) => {
 
         // Open new window if no matching client found
         if (clients.openWindow) {
-          console.log("[SW NotifClick] ❌ No matching client found, opening new window");
           return clients.openWindow(urlToOpen);
         }
       })

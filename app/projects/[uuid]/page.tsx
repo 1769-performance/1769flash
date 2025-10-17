@@ -67,36 +67,28 @@ export default function ProjectDetailPage() {
     fetchProjectData();
   }, [projectUuid]);
 
-  // Listen for service worker messages (notification click reload)
+  // Listen for service worker messages (auto-refresh on file upload notifications)
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) {
-      console.log("[Project Page] Service worker not supported");
-      return;
-    }
-
-    console.log("[Project Page] Setting up service worker message listener");
+    if (!("serviceWorker" in navigator)) return;
 
     const handleMessage = (event: MessageEvent) => {
-      console.log("[Project Page] ========== Received message from SW ==========");
-      console.log("[Project Page] Message type:", event.data?.type);
-      console.log("[Project Page] Full message data:", JSON.stringify(event.data, null, 2));
-
-      // Handle file list refresh request from notification click
+      // Handle file list refresh request (from notification arrival or click)
       if (event.data?.type === "RELOAD_PAGE") {
-        console.log("[Project Page] 🔄 RELOAD_PAGE message received, refreshing file list...");
-        // Trigger file list refresh (same as Solution 1)
-        setFileRefreshTrigger((prev) => prev + 1);
+        const notificationProjectUuid = event.data?.data?.projects;
+
+        // Only refresh if notification is for current project (or no project specified)
+        if (!notificationProjectUuid || notificationProjectUuid === projectUuid) {
+          setFileRefreshTrigger((prev) => prev + 1);
+        }
       }
     };
 
     navigator.serviceWorker.addEventListener("message", handleMessage);
-    console.log("[Project Page] ✅ Message listener registered");
 
     return () => {
-      console.log("[Project Page] 🧹 Cleaning up message listener");
       navigator.serviceWorker.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [projectUuid]);
 
   const handleEcuClick = (serial: string) => {
     setSelectedEcuSerial(selectedEcuSerial === serial ? null : serial);

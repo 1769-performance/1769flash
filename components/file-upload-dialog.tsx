@@ -91,7 +91,6 @@ export function FileUploadDialog({
       }
 
       await postFormData(`/ecus/${ecuSerial}/files/`, formData);
-      console.log('File upload successful, setting success state');
       setSuccess(true);
       setFile(null);
       setComment("");
@@ -99,7 +98,6 @@ export function FileUploadDialog({
 
       // Close dialog and trigger refresh after a brief delay to show success
       setTimeout(() => {
-        console.log('Calling onFileUploaded callback');
         onFileUploaded();
         setOpen(false);
       }, 1000);
