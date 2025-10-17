@@ -17,6 +17,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = async () => {
+    // Skip authentication for public routes
+    if (typeof window !== "undefined") {
+      const pathname = window.location.pathname
+      if (pathname.startsWith('/charts/')) {
+        setLoading(false)
+        setUser(null)
+        return
+      }
+    }
+
     try {
       const profile = await getJson<AuthResponse>("/accounts/profile/")
       setUser(profile)
