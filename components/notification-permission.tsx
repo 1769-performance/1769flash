@@ -194,25 +194,25 @@ export function NotificationPermission() {
       <div className="space-y-3">
         <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
           <Bell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="flex items-center justify-between gap-4">
+          <AlertDescription className="space-y-4 sm:space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Enable push notifications</p>
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 Get real-time alerts for messages, file uploads, and project updates - even when the tab is closed
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={handleDismiss} className="dark:border-blue-600 dark:hover:bg-blue-900 dark:text-blue-100">
-                <X className="h-4 w-4 mr-1" />
-                Dismiss
+            <div className="flex flex-row gap-2 lg:flex-col lg:w-auto">
+              <Button size="sm" variant="outline" onClick={handleDismiss} className="flex-1 lg:w-full dark:border-blue-600 dark:hover:bg-blue-900 dark:text-blue-100">
+                <X className="h-4 w-4 mr-2 shrink-0" />
+                <span>Dismiss</span>
               </Button>
-              <Button size="sm" onClick={handleSubscribe} disabled={isLoading} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+              <Button size="sm" onClick={handleSubscribe} disabled={isLoading} className="flex-1 lg:w-full dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />
                 ) : (
-                  <Bell className="h-4 w-4 mr-1" />
+                  <Bell className="h-4 w-4 mr-2 shrink-0" />
                 )}
-                Enable
+                <span>Enable</span>
               </Button>
             </div>
           </AlertDescription>
