@@ -16,10 +16,12 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
+  Copy,
   Download,
   Eye,
   EyeOff,
   RotateCcw,
+  Share2,
   TrendingUp,
   X,
   ZoomIn,
@@ -42,6 +44,8 @@ interface ChartVisualizerProps {
   log: Log | null;
   open: boolean;
   onClose: () => void;
+  projectUuid?: string;
+  urlParams?: URLSearchParams;
 }
 
 interface VisibleColumn extends ChartColumn {
@@ -58,7 +62,7 @@ const AXIS_COLORS = {
   R2: "#ef4444", // red
 } as const;
 
-export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
+export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: ChartVisualizerProps) {
   const [csvData, setCsvData] = useState<ParsedCsvData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -278,6 +282,47 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
         setVisibleColumns(initialColumns);
         setTimeRange([0, 100]);
 
+        // Restore state from URL parameters if available
+        if (urlParams) {
+          // Set time range from URL params
+          const rangeParam = urlParams.get("range");
+          if (rangeParam) {
+            const [start, end] = rangeParam.split("-").map(Number);
+            if (!isNaN(start) && !isNaN(end) && start >= 0 && end <= 100) {
+              setTimeRange([start, end]);
+            }
+          }
+
+          // Set visible channels from URL params
+          const channelsParam = urlParams.get("channels");
+          if (channelsParam) {
+            const channelKeys = channelsParam.split(",");
+            setVisibleColumns((prev) =>
+              prev.map((col) => ({
+                ...col,
+                visible: channelKeys.includes(col.key),
+                shown: channelKeys.includes(col.key),
+              }))
+            );
+          }
+
+          // Set Y-axis assignments from URL params
+          const axesParam = urlParams.get("axes");
+          if (axesParam) {
+            const axisAssignments = axesParam.split(",");
+            setVisibleColumns((prev) =>
+              prev.map((col) => {
+                const assignment = axisAssignments.find((a) => a.startsWith(`${col.key}:`));
+                if (assignment) {
+                  const axisId = assignment.split(":")[1] as "L1" | "L2" | "R1" | "R2";
+                  return { ...col, yAxisId: axisId };
+                }
+                return col;
+              })
+            );
+          }
+        }
+
         console.log(
           `Loaded ${parsedData.totalRows} data points in ${parsedData.columns.length} columns`
         );
@@ -374,6 +419,46 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
     a.click();
     URL.revokeObjectURL(url);
   }, [filteredData, dataColumns, log?.name]);
+
+  const copyShareLink = useCallback(() => {
+    if (!log?.uuid) return;
+
+    // Get visible channels
+    const visibleChannels = dataColumns
+      .filter((col) => col.visible && col.shown)
+      .map((col) => col.key)
+      .join(",");
+
+    // Build URL with state parameters - simplified format
+    const baseUrl = window.location.origin;
+    const url = new URL(`${baseUrl}/charts/${log.uuid}`);
+
+    // Add parameters for chart state
+    if (visibleChannels) {
+      url.searchParams.set("channels", visibleChannels);
+    }
+
+    if (timeRange[0] !== 0 || timeRange[1] !== 100) {
+      url.searchParams.set("range", `${timeRange[0]}-${timeRange[1]}`);
+    }
+
+    // Add Y-axis assignments
+    const axisAssignments = dataColumns
+      .filter((col) => col.visible)
+      .map((col) => `${col.key}:${col.yAxisId}`)
+      .join(",");
+    if (axisAssignments) {
+      url.searchParams.set("axes", axisAssignments);
+    }
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      // Show success message (you could add a toast notification here)
+      console.log("Share link copied to clipboard:", url.toString());
+    }).catch((err) => {
+      console.error("Failed to copy share link:", err);
+    });
+  }, [log?.uuid, projectUuid, dataColumns, timeRange]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null;
@@ -498,6 +583,17 @@ export function ChartVisualizer({ log, open, onClose }: ChartVisualizerProps) {
             >
               <Download className="h-3 w-3" />
             </Button>
+            {projectUuid && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copyShareLink}
+                className="h-7 px-2"
+                title="Copy shareable link"
+              >
+                <Share2 className="h-3 w-3" />
+              </Button>
+            )}
             <Button
               size="sm"
               variant="ghost"

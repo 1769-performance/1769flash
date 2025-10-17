@@ -86,8 +86,8 @@ export default function ProjectDetailPage() {
   };
 
   const handleLogVisualize = (log: Log) => {
-    setChartLog(log);
-    setChartModalOpen(true);
+    // Navigate to the simplified chart page
+    router.push(`/charts/${log.uuid}`);
   };
 
   const handleChartClose = () => {

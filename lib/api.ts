@@ -241,9 +241,9 @@ export interface Project {
   status: "new" | "required_customer_action" | "required_dealer_action" | "completed" | "closed"
   created: string
   modified: string
-  vehicle: string
-  dealer: string
-  customer: string
+  vehicle: string | { vin: string } // Can be string or object in different responses
+  dealer: string | { uuid: string; username?: string } // Can be string or object in different responses
+  customer: string | { uuid: string; user?: User } // Can be string or object in different responses
   unread_count: string
   ecu_serials: string[]
   ecus?: ECU[] // Only included in detail view
