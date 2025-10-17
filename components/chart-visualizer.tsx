@@ -242,12 +242,9 @@ export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: 
       setError(null);
 
       try {
-        const proxyUrl = log.file_uuid
-          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${log.file_uuid}/logs/${log.uuid}/content`
-          : log.url;
-
-        const response = await fetch(proxyUrl, {
-          credentials: "include",
+        // Fetch log content directly from S3 URL with CORS handling
+        let response = await fetch(log.url, {
+          mode: 'cors', // Explicitly request CORS access
         });
 
         if (!response.ok) {
