@@ -44,7 +44,7 @@ const nextConfig = {
           }] : []),
           ...(!isDev ? [{
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://127.0.0.1:8001 ws://127.0.0.1:8001 wss://dealer.1769.fi https://dealer.1769.fi https://drive.google.com https://*.s3.amazonaws.com https://*.s3.*.amazonaws.com; frame-ancestors 'none';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://127.0.0.1:8001 ws://127.0.0.1:8001 wss://dealer.1769.fi https://dealer.1769.fi https://drive.google.com https://*.s3.amazonaws.com https://1769-flash-bucket.s3.eu-north-1.amazonaws.com; frame-ancestors 'none';",
           }] : []),
         ],
       },
