@@ -16,7 +16,6 @@ const API_BASE_URL =
 
 // Install event - cache static assets
 self.addEventListener("install", (event) => {
-  console.log("Service Worker: Installing...");
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
@@ -30,13 +29,11 @@ self.addEventListener("install", (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener("activate", (event) => {
-  console.log("Service Worker: Activating...");
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log("Service Worker: Deleting old cache:", cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -47,8 +44,6 @@ self.addEventListener("activate", (event) => {
 
 // Push event - handle incoming push messages
 self.addEventListener("push", (event) => {
-  console.log("[SW Push] ✅ Push event received!", new Date().toISOString());
-
   let notificationData = {
     title: "1769 Dashboard",
     body: "You have a new notification",
@@ -63,9 +58,7 @@ self.addEventListener("push", (event) => {
 
   if (event.data) {
     try {
-      console.log("[SW Push] Raw event.data:", event.data);
       const data = event.data.json();
-      console.log("[SW Push] Parsed JSON data:", JSON.stringify(data, null, 2));
 
       notificationData = {
         ...notificationData,
@@ -84,17 +77,11 @@ self.addEventListener("push", (event) => {
         // Add vibration for better visibility (works on mobile)
         vibrate: [200, 100, 200],
       };
-
-      console.log(
-        "[SW Push] Final notification data:",
-        JSON.stringify(notificationData, null, 2)
-      );
     } catch (error) {
       console.error("[SW Push] ❌ Error parsing push data:", error);
       // If JSON parsing fails, use the raw text as body
       try {
         notificationData.body = event.data.text();
-        console.log("[SW Push] Fallback to text:", notificationData.body);
       } catch (textError) {
         console.error(
           "[SW Push] ❌ Error getting text from event.data:",
@@ -117,10 +104,6 @@ self.addEventListener("push", (event) => {
           type: "window",
           includeUncontrolled: true,
         });
-
-        console.log(
-          `[SW Push] Found ${clientPages.length} open client page(s)`
-        );
 
         for (const page of clientPages) {
           // Send sound notification for all push notifications
@@ -152,10 +135,6 @@ self.addEventListener("push", (event) => {
         await self.registration.showNotification(
           notificationData.title,
           notificationData
-        );
-
-        console.log(
-          "[SW Push] ✅ Notification displayed and messages sent!"
         );
       } catch (error) {
         console.error("[SW Push] ❌ Failed to display notification:", error);
@@ -208,13 +187,11 @@ self.addEventListener("notificationclick", (event) => {
 
 // Notification close event - optional cleanup
 self.addEventListener("notificationclose", (event) => {
-  console.log("Service Worker: Notification closed");
   // Could add analytics or cleanup logic here
 });
 
 // Push subscription change event - handle subscription updates
 self.addEventListener("pushsubscriptionchange", (event) => {
-  console.log("Service Worker: Push subscription changed");
 
   event.waitUntil(
     self.registration.pushManager

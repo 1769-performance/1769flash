@@ -5,6 +5,7 @@ import { EcuPanel } from "@/components/ecu-panel";
 import { LicensesTable } from "@/components/licenses-table";
 import { PaymentsTable } from "@/components/payments-table";
 import { ProjectsTable } from "@/components/projects-table";
+import { BuyFlasherLicenseDialog } from "@/components/buy-flasher-license-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { getJson, type Log, type Vehicle } from "@/lib/api";
-import { ArrowLeft, Car, CreditCard, FileText, FolderOpen } from "lucide-react";
+import { ArrowLeft, Car, CreditCard, FileText, FolderOpen, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -34,6 +35,9 @@ export default function VehicleDetailPage() {
   // Chart visualization state
   const [chartLog, setChartLog] = useState<Log | null>(null);
   const [chartModalOpen, setChartModalOpen] = useState(false);
+
+  // License purchase dialog state
+  const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchVehicle = async () => {
@@ -140,6 +144,12 @@ export default function VehicleDetailPage() {
                   Vehicle details and management
                 </CardDescription>
               </div>
+              <div className="shrink-0">
+                <Button onClick={() => setLicenseDialogOpen(true)}>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Buy License
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
@@ -199,6 +209,55 @@ export default function VehicleDetailPage() {
                   <p className="text-sm font-medium">Series</p>
                   <p className="text-sm text-muted-foreground">
                     {vehicle.series}
+                  </p>
+                </div>
+              )}
+
+              {vehicle.model && (
+                <div>
+                  <p className="text-sm font-medium">Model</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.model}
+                  </p>
+                </div>
+              )}
+
+              {vehicle.engine_code && (
+                <div>
+                  <p className="text-sm font-medium">Engine Code</p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {vehicle.engine_code}
+                  </p>
+                </div>
+              )}
+
+              {vehicle.transmission && (
+                <div>
+                  <p className="text-sm font-medium">Transmission</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.transmission}
+                  </p>
+                </div>
+              )}
+
+              {vehicle.steering && (
+                <div>
+                  <p className="text-sm font-medium">Steering</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.steering === "LL"
+                      ? "Left"
+                      : vehicle.steering === "RL"
+                        ? "Right"
+                        : vehicle.steering}
+                  </p>
+                </div>
+              )}
+
+              {vehicle.version && (
+                <div>
+                  <p className="text-sm font-medium">Version</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.version}
                   </p>
                 </div>
               )}
@@ -295,6 +354,13 @@ export default function VehicleDetailPage() {
         log={chartLog}
         open={chartModalOpen}
         onClose={handleChartClose}
+      />
+
+      {/* License Purchase Dialog */}
+      <BuyFlasherLicenseDialog
+        open={licenseDialogOpen}
+        onOpenChange={setLicenseDialogOpen}
+        vehicle={vehicle}
       />
     </div>
   );

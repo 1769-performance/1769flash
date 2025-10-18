@@ -16,7 +16,6 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  Copy,
   Download,
   Eye,
   EyeOff,
@@ -56,20 +55,26 @@ interface VisibleColumn extends ChartColumn {
 
 // Color constants for Y-axes
 const AXIS_COLORS = {
-  L1: "#3b82f6", // blue
-  L2: "#10b981", // green
-  R1: "#f59e0b", // amber
-  R2: "#ef4444", // red
+  L1: "#6b7280", // gray-500 (muted)
+  L2: "#10b981", // emerald-500
+  R1: "#f59e0b", // amber-500
+  R2: "#ef4444", // red-500
 } as const;
 
-export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: ChartVisualizerProps) {
+export function ChartVisualizer({
+  log,
+  open,
+  onClose,
+  projectUuid,
+  urlParams,
+}: ChartVisualizerProps) {
   const [csvData, setCsvData] = useState<ParsedCsvData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumn[]>([]);
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 100]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(288); // 288px = w-72 (18rem)
+  const [sidebarWidth, setSidebarWidth] = useState(396);
   const [isResizing, setIsResizing] = useState(false);
 
   // Chart selection state for datazap.me-style interaction
@@ -244,7 +249,7 @@ export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: 
       try {
         // Fetch log content directly from S3 URL with CORS handling
         let response = await fetch(log.url, {
-          mode: 'cors', // Explicitly request CORS access
+          mode: "cors", // Explicitly request CORS access
         });
 
         if (!response.ok) {
@@ -309,9 +314,15 @@ export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: 
             const axisAssignments = axesParam.split(",");
             setVisibleColumns((prev) =>
               prev.map((col) => {
-                const assignment = axisAssignments.find((a) => a.startsWith(`${col.key}:`));
+                const assignment = axisAssignments.find((a) =>
+                  a.startsWith(`${col.key}:`)
+                );
                 if (assignment) {
-                  const axisId = assignment.split(":")[1] as "L1" | "L2" | "R1" | "R2";
+                  const axisId = assignment.split(":")[1] as
+                    | "L1"
+                    | "L2"
+                    | "R1"
+                    | "R2";
                   return { ...col, yAxisId: axisId };
                 }
                 return col;
@@ -449,33 +460,36 @@ export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: 
     }
 
     // Copy to clipboard
-    navigator.clipboard.writeText(url.toString()).then(() => {
-      // Show success message (you could add a toast notification here)
-      console.log("Share link copied to clipboard:", url.toString());
-    }).catch((err) => {
-      console.error("Failed to copy share link:", err);
-    });
+    navigator.clipboard
+      .writeText(url.toString())
+      .then(() => {
+        // Show success message (you could add a toast notification here)
+        console.log("Share link copied to clipboard:", url.toString());
+      })
+      .catch((err) => {
+        console.error("Failed to copy share link:", err);
+      });
   }, [log?.uuid, projectUuid, dataColumns, timeRange]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null;
 
     return (
-      <Card className="p-2 shadow-lg border bg-background/95 backdrop-blur-sm max-w-xs">
+      <Card className="p-2 shadow-lg border bg-background/95 backdrop-blur-sm min-w-[300px] max-w-[400px]">
         <div className="space-y-1">
           <p className="font-medium text-xs">
             Time: {formatTime(Number(label))}
           </p>
           {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-1 text-xs">
+            <div key={index} className="flex items-center gap-2 text-xs">
               <div
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="truncate max-w-[120px]" title={entry.name}>
+              <span className="truncate max-w-[200px]" title={entry.name}>
                 {entry.name}:
               </span>
-              <span className="font-medium ml-auto">
+              <span className="font-medium ml-auto whitespace-nowrap">
                 {typeof entry.value === "number"
                   ? entry.value.toFixed(2)
                   : entry.value}
@@ -542,7 +556,7 @@ export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: 
             {csvData && (
               <Badge variant="outline" className="text-xs">
                 {csvData.totalRows.toLocaleString()} pts •{" "}
-                {csvData.columns.length} channels
+                {dataColumns.length} channels
               </Badge>
             )}
           </div>
@@ -642,11 +656,14 @@ export function ChartVisualizer({ log, open, onClose, projectUuid, urlParams }: 
               {/* Column List */}
               <ScrollArea className="flex-1 overflow-y-auto">
                 <div className="p-2 space-y-1">
-                  {dataColumns.map((column) => (
-                    <div
-                      key={column.key}
-                      className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-2 p-1.5 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
-                    >
+                  {dataColumns
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((column) => (
+                      <div
+                        key={column.key}
+                        className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-2 p-1.5 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                      >
                       {/* Checkbox for visibility */}
                       <Checkbox
                         checked={column.visible}

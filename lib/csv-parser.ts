@@ -29,50 +29,50 @@ export interface ParsedCsvData {
 }
 
 /**
- * Color palette for chart lines - highly contrasting colors for better differentiation
- * Colors are selected to be maximally distinct from each other
+ * Color palette for chart lines - muted Tailwind-based colors for better readability
+ * Uses Tailwind CSS 400-500 series colors for softer, more professional appearance
  */
 const CHART_COLORS = [
-  '#FF0000', // Bright Red
-  '#0000FF', // Bright Blue
-  '#00FF00', // Bright Green
-  '#FF00FF', // Magenta
-  '#FFFF00', // Yellow
-  '#00FFFF', // Cyan
-  '#FF8000', // Orange
-  '#8000FF', // Purple
-  '#00FF80', // Spring Green
-  '#FF0080', // Rose
-  '#0080FF', // Azure
-  '#80FF00', // Chartreuse
-  '#FF6B35', // Coral
-  '#4ECDC4', // Turquoise
-  '#FFD700', // Gold
-  '#FF1493', // Deep Pink
-  '#00CED1', // Dark Turquoise
-  '#FF4500', // Orange Red
-  '#9370DB', // Medium Purple
-  '#32CD32', // Lime Green
-  '#FF69B4', // Hot Pink
-  '#1E90FF', // Dodger Blue
-  '#FFB6C1', // Light Pink
-  '#20B2AA', // Light Sea Green
-  '#FF6347', // Tomato
-  '#4169E1', // Royal Blue
-  '#98FB98', // Pale Green
-  '#DDA0DD', // Plum
-  '#F0E68C', // Khaki
-  '#87CEEB', // Sky Blue
-  '#FA8072', // Salmon
-  '#9932CC', // Dark Orchid
-  '#7FFF00', // Chartreuse
-  '#DC143C', // Crimson
-  '#00BFFF', // Deep Sky Blue
-  '#ADFF2F', // Green Yellow
-  '#FF00FF', // Fuchsia
-  '#00FA9A', // Medium Spring Green
-  '#FF1493', // Deep Pink
-  '#00CED1'  // Dark Turquoise
+  '#60a5fa', // blue-400
+  '#34d399', // emerald-400
+  '#f87171', // red-400
+  '#a78bfa', // violet-400
+  '#fbbf24', // amber-400
+  '#22d3ee', // cyan-400
+  '#f472b6', // pink-400
+  '#fb923c', // orange-400
+  '#818cf8', // indigo-400
+  '#4ade80', // green-400
+  '#f43f5e', // rose-500
+  '#0ea5e9', // sky-500
+  '#a855f7', // purple-500
+  '#84cc16', // lime-500
+  '#14b8a6', // teal-500
+  '#d946ef', // fuchsia-500
+  '#eab308', // yellow-500
+  '#ec4899', // pink-500
+  '#06b6d4', // cyan-500
+  '#8b5cf6', // violet-500
+  '#22c55e', // green-500
+  '#f97316', // orange-500
+  '#3b82f6', // blue-500
+  '#ef4444', // red-500
+  '#f59e0b', // amber-500
+  '#10b981', // emerald-500
+  '#6366f1', // indigo-500
+  '#94a3b8', // slate-400
+  '#6b7280', // gray-500
+  '#71717a', // zinc-500
+  '#c084fc', // purple-400
+  '#fcd34d', // amber-300
+  '#67e8f9', // cyan-300
+  '#fdba74', // orange-300
+  '#93c5fd', // blue-300
+  '#86efac', // green-300
+  '#fca5a5', // red-300
+  '#c4b5fd', // violet-300
+  '#fdba74', // orange-300
+  '#bef264'  // lime-300
 ]
 
 /**

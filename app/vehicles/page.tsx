@@ -169,6 +169,36 @@ export default function VehiclesPage() {
         ]
       : []),
     {
+      key: "model" as keyof Vehicle,
+      header: "Model",
+      render: (model: string) =>
+        model ? (
+          <span className="text-sm truncate">{model}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      key: "engine_code" as keyof Vehicle,
+      header: "Engine",
+      render: (engine_code: string) =>
+        engine_code ? (
+          <span className="text-sm font-mono truncate">{engine_code}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      key: "transmission" as keyof Vehicle,
+      header: "Trans.",
+      render: (transmission: string) =>
+        transmission ? (
+          <span className="text-sm truncate">{transmission}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
       key: "paid_options" as keyof Vehicle,
       header: "Paid Options",
       render: (_: unknown, vehicle: Vehicle) => {

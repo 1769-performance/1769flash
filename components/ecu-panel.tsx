@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronRight, Cpu, FileText, BarChart3, Download, Upload, Loader2 } from "lucide-react"
-import { type ECU, type SVT, type SVK, type File, type Log, getJson } from "@/lib/api"
+import { ChevronDown, ChevronRight, Cpu, FileText, BarChart3, Download, Upload, Loader2, Trash2, Edit3 } from "lucide-react"
+import { type ECU, type SVT, type SVK, type File, type Log, getJson, deleteLog, patchLog } from "@/lib/api"
 import { FileUploadDialog } from "@/components/file-upload-dialog"
 
 interface EcuPanelProps {
@@ -41,6 +41,8 @@ export function EcuPanel({
   const [loadingFiles, setLoadingFiles] = useState<Set<string>>(new Set())
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({})
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [editingLogUuid, setEditingLogUuid] = useState<string | null>(null)
+  const [editingComment, setEditingComment] = useState<string>("")
 
   // Fetch files when ECU is selected or refresh is triggered
   useEffect(() => {
@@ -165,6 +167,44 @@ export function EcuPanel({
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handleDeleteLog = async (logUuid: string, ecuSerial: string) => {
+    if (!confirm("Are you sure you want to delete this log? This action cannot be undone.")) {
+      return
+    }
+
+    try {
+      await deleteLog(logUuid)
+      // Refresh the files list for this ECU
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      console.error("Failed to delete log:", error)
+      alert("Failed to delete log. Please try again.")
+    }
+  }
+
+  const handleStartEditLog = (log: Log) => {
+    setEditingLogUuid(log.uuid)
+    setEditingComment(log.comment || "")
+  }
+
+  const handleCancelEditLog = () => {
+    setEditingLogUuid(null)
+    setEditingComment("")
+  }
+
+  const handleSaveLogComment = async (logUuid: string, ecuSerial: string) => {
+    try {
+      await patchLog(logUuid, { comment: editingComment })
+      setEditingLogUuid(null)
+      setEditingComment("")
+      // Refresh the files list for this ECU
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      console.error("Failed to update log comment:", error)
+      alert("Failed to update log comment. Please try again.")
+    }
   }
 
   if (ecus.length === 0) {
@@ -330,7 +370,7 @@ export function EcuPanel({
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                  {isDealer && (
+                                  {isDealer && file.url && (
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -371,21 +411,50 @@ export function EcuPanel({
                                               {new Date(log.created).toLocaleString()}
                                             </span>
                                           </div>
-                                          {log.comment && (
-                                            <p className="text-xs text-muted-foreground ml-6 break-words">{log.comment}</p>
+                                          {editingLogUuid === log.uuid ? (
+                                            <div className="ml-6 space-y-2">
+                                              <textarea
+                                                value={editingComment}
+                                                onChange={(e) => setEditingComment(e.target.value)}
+                                                className="w-full p-2 text-xs border rounded-md bg-background"
+                                                rows={2}
+                                                placeholder="Add a comment..."
+                                              />
+                                              <div className="flex gap-2">
+                                                <Button
+                                                  size="sm"
+                                                  onClick={() => handleSaveLogComment(log.uuid, ecu.serial)}
+                                                >
+                                                  Save
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={handleCancelEditLog}
+                                                >
+                                                  Cancel
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            log.comment && (
+                                              <p className="text-xs text-muted-foreground ml-6 break-words">{log.comment}</p>
+                                            )
                                           )}
                                         </div>
 
                                         <div className="flex items-center gap-1 shrink-0">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleDownload(log.url, log.name)}
-                                            title="Download log file"
-                                            className="shrink-0"
-                                          >
-                                            <Download className="h-4 w-4" />
-                                          </Button>
+                                          {log.url && (
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => handleDownload(log.url, log.name)}
+                                              title="Download log file"
+                                              className="shrink-0"
+                                            >
+                                              <Download className="h-4 w-4" />
+                                            </Button>
+                                          )}
 
                                           {onLogVisualize && (
                                             <Button
@@ -398,6 +467,29 @@ export function EcuPanel({
                                               <BarChart3 className="h-4 w-4 sm:mr-2" />
                                               <span className="hidden sm:inline">Visualize</span>
                                             </Button>
+                                          )}
+
+                                          {isDealer && editingLogUuid !== log.uuid && (
+                                            <>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleStartEditLog(log)}
+                                                title="Edit comment"
+                                                className="shrink-0"
+                                              >
+                                                <Edit3 className="h-4 w-4" />
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleDeleteLog(log.uuid, ecu.serial)}
+                                                title="Delete log"
+                                                className="shrink-0 text-destructive hover:text-destructive"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </>
                                           )}
 
                                         </div>

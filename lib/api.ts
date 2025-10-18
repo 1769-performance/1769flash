@@ -322,6 +322,12 @@ export interface Vehicle {
   customer?: string; // Username of the customer
   series?: string;
   fa_codes?: string[];
+  // VinInfo fields (from VIN lookup)
+  model?: string; // Vehicle model (e.g., "118i", "X3 xDrive20d")
+  steering?: string; // Steering position: LL (Left), RL (Right), Unknown
+  version?: string; // Market version: ECE or US
+  transmission?: string; // Transmission type: AUTO, MANUAL, X, -
+  engine_code?: string; // Engine code (e.g., "N13B16M0")
   egs_paid: boolean;
   swap_paid: boolean;
   egs_swap_paid: boolean;
@@ -431,4 +437,16 @@ export interface License {
   expiration_date: string | null;
   created: string;
   modified: string;
+}
+
+// Log operations
+export async function deleteLog(uuid: string): Promise<void> {
+  return deleteJson(`/logs/${uuid}/`);
+}
+
+export async function patchLog(
+  uuid: string,
+  data: { comment?: string }
+): Promise<Log> {
+  return patchJson<Log>(`/logs/${uuid}/`, data);
 }
